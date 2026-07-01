@@ -1,0 +1,31 @@
+model MovimentacaoEstoque {
+  id              String    @id @db.Uuid
+  variacaoId      String    @db.Uuid
+  variacao        Variation @relation(fields: [variacaoId], references: [id])
+  tipo            String
+  motivo          String
+  quantidade      Int
+  saldoResultante Int
+  origemVendaId   String?
+  usuarioId       String    @db.Uuid
+  createdAt       DateTime  @default(now())
+
+  @@index([variacaoId, createdAt(sort: Desc)])
+  @@index([origemVendaId])
+  @@index([usuarioId])
+  @@map("movimentacoes_estoque")
+}
+
+model EstoqueSaldo {
+  id                  String    @id @db.Uuid
+  variacaoId          String    @unique @db.Uuid
+  variacao            Variation @relation(fields: [variacaoId], references: [id])
+  saldoAtual          Int
+  quantidadeReservada Int       @default(0)
+  estoqueMinimo       Int
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([saldoAtual, estoqueMinimo])
+  @@map("estoque_saldos")
+}

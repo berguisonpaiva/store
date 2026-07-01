@@ -1,0 +1,39 @@
+// Cash-session (caixa) persistence. `SessaoCaixa` is the aggregate root and owns
+// its `MovimentacaoCaixa` child rows (1:N). A session is `ABERTO` then `FECHADO`
+// exactly once. Monetary fields are `Decimal` (reais, 2 decimal places) — never
+// `float`; the `*.prisma` adapter converts reais <-> integer cents at the
+// boundary so the domain keeps its precise cents representation.
+//
+// The "one ABERTO session per operator" invariant is enforced in the domain
+// (`@repo/sales`) AND by a PARTIAL UNIQUE INDEX added in the migration SQL
+// (`operadorId WHERE status = 'ABERTO'`) — Prisma cannot express a partial
+// unique index natively, so it lives only in the generated migration.
+
+model SessaoCaixa {
+  id               String               @id @db.Uuid
+  operadorId       String               @db.Uuid
+  status           String
+  valorAbertura    Decimal              @db.Decimal(12, 2)
+  valorFechamento  Decimal?             @db.Decimal(12, 2)
+  abertaEm         DateTime             @default(now())
+  fechadaEm        DateTime?
+  movimentacoes    MovimentacaoCaixa[]
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  @@index([operadorId])
+  @@map("sessoes_caixa")
+}
+
+model MovimentacaoCaixa {
+  id         String      @id @db.Uuid
+  sessaoId   String      @db.Uuid
+  sessao     SessaoCaixa @relation(fields: [sessaoId], references: [id], onDelete: Cascade)
+  tipo       String
+  valor      Decimal     @db.Decimal(12, 2)
+  observacao String?
+  criadaEm   DateTime    @default(now())
+
+  @@index([sessaoId, criadaEm(sort: Desc)])
+  @@map("movimentacoes_caixa")
+}

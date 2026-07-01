@@ -1,0 +1,6 @@
+export enum FormaPagamento {
+  DINHEIRO = 'DINHEIRO',
+  CARTAO_DEBITO = 'CARTAO_DEBITO',
+  CARTAO_CREDITO = 'CARTAO_CREDITO',
+  PIX = 'PIX',
+}

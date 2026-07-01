@@ -1,0 +1,43 @@
+{
+  "skill_name": "config-project",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Inicialize um monorepo web+backend em uma pasta vazia usando Bun como package manager. O backend deve ser NestJS com Fastify, documentação Scalar/Swagger e Docker por app.",
+      "expected_output": "O projeto contém packageManager bun, apps frontend/backend, main.ts com FastifyAdapter, @fastify/cors, @fastify/multipart, ValidationPipe, setupDocs, Dockerfile no frontend e backend, .dockerignore e docker-compose.yml.",
+      "files": [],
+      "assertions": [
+        "package.json contains packageManager starting with bun@ or Bun lockfile is honored",
+        "backend src/main.ts imports FastifyAdapter and NestFastifyApplication",
+        "backend src/main.ts registers @fastify/cors and @fastify/multipart",
+        "backend src/main.ts excludes docs, docs-json and swagger from the api global prefix",
+        "backend src/core/docs/setup-docs.ts configures Scalar and Swagger",
+        "frontend and backend Dockerfiles exist"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Reaplique config-project em um monorepo existente que já tem frontend e backend. Não duplique scripts, env vars nem entradas Docker.",
+      "expected_output": "A execução é idempotente: preserva arquivos existentes, faz upsert de env vars e mantém Dockerfiles/docker-compose sem duplicações.",
+      "files": [],
+      "assertions": [
+        "Repeated execution does not duplicate package scripts",
+        "Repeated execution does not duplicate env variables",
+        "docker-compose.yml has one web service and one backend service",
+        "skills log records file updates and risks"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Crie a base frontend Next.js e documente o padrão para busca, filtros e estado cliente.",
+      "expected_output": "A orientação do frontend usa App Router, Server Actions para mutações, searchParams/useSearchParams para estado de URL, nuqs para query string tipada e Zustand para estado client-only compartilhado.",
+      "files": [],
+      "assertions": [
+        "Skill documentation mentions Server Actions",
+        "Skill documentation mentions nuqs for typed URL query state",
+        "Skill documentation mentions Zustand for client-only shared state",
+        "Skill documentation prefers URL state for search/filter/pagination"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+// Product catalog. `Product` is the aggregate root and owns its `Variation`
+// child rows (1:N), written together inside a transaction. Categories, products
+// and variations are never hard-deleted — only their `active` flag changes.
+//
+// Uniqueness (category name, variation SKU, variation barcode-when-present) is
+// enforced in the domain (`@repo/catalog`); the unique indexes below are only
+// redundant safety nets. Postgres ignores NULLs in a standard unique index, so
+// multiple variations without a barcode are allowed.
+
+model Category {
+  id        String    @id @db.Uuid
+  name      String    @unique
+  active    Boolean   @default(true)
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("categories")
+}
+
+model Product {
+  id          String      @id @db.Uuid
+  name        String
+  description String?
+  categoryId  String?     @db.Uuid
+  category    Category?   @relation(fields: [categoryId], references: [id])
+  active      Boolean     @default(true)
+  variations  Variation[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([categoryId])
+
+  @@map("products")
+}
+
+model Variation {
+  id                 String               @id @db.Uuid
+  productId          String               @db.Uuid
+  product            Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku                String               @unique
+  barcode            String?              @unique
+  attributes         Json                 @default("{}")
+  priceCents         Int
+  minStock           Int                  @default(0)
+  active             Boolean              @default(true)
+  inventoryMovements MovimentacaoEstoque[]
+  inventoryBalance   EstoqueSaldo?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  @@index([productId])
+
+  @@map("variations")
+}

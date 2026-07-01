@@ -1,0 +1,7 @@
+export * from './registrar-entrada.use-case'
+export * from './registrar-saida.use-case'
+export * from './ajustar-saldo.use-case'
+export * from './consultar-saldo.use-case'
+export * from './listar-movimentacoes.use-case'
+export * from './listar-abaixo-do-minimo.use-case'
+export * from './estoque-port.service'

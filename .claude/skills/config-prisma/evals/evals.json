@@ -1,0 +1,38 @@
+{
+  "skill_name": "config-prisma",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Configure Prisma em um backend NestJS dentro de monorepo Bun.",
+      "expected_output": "A skill não assume npm/npx; scripts Prisma usam binários locais e install respeita Bun.",
+      "files": [],
+      "assertions": [
+        "Generated package scripts use 'prisma generate' (not 'npx prisma generate')",
+        "prisma.config.ts seed uses 'bunx tsx prisma/seed/main.ts' for Bun projects",
+        "Install flow detects packageManager bun from package.json"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Reaplique config-prisma em backend já configurado com Docker Compose e seed moderno.",
+      "expected_output": "A aplicação é idempotente, preserva seed moderno, mantém docker-compose e não recria seeds de módulos.",
+      "files": [],
+      "assertions": [
+        "Existing seed tasks are preserved",
+        "No module seed task is created by default",
+        "DATABASE_URL is upserted without deleting unrelated env vars"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Configure Prisma em monorepo pnpm com backend NestJS existente sem migrations.",
+      "expected_output": "A skill detecta pnpm, usa 'pnpm exec tsx' no seed do prisma.config.ts e 'pnpm install' no --install.",
+      "files": [],
+      "assertions": [
+        "prisma.config.ts seed uses 'pnpm exec tsx prisma/seed/main.ts' for pnpm projects",
+        "bootstrap.model.prisma is created when no domain models exist",
+        "DbModule is added to app.module.ts imports"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "skill_name": "flutter-android-release-build",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Estou no Windows PowerShell dentro de um app Flutter e preciso gerar um AAB assinado para subir na Play Store. Ainda nao tenho keystore. Me passe o passo a passo seguro.",
+      "expected_output": "Uses Windows PowerShell commands, includes keytool with $env:USERPROFILE and backtick continuations, key.properties with escaped Windows path guidance, Gradle signing config warning, flutter build appbundle, and secret-safety reminders.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Meu projeto Flutter usa android/app/build.gradle.kts e eu preciso configurar signingConfig release sem misturar Groovy. O que devo alterar?",
+      "expected_output": "Identifies Kotlin DSL, gives build.gradle.kts-specific Properties/FileInputStream and signingConfigs create(\"release\") guidance, warns not to use Groovy syntax, and suggests flutter clean after Gradle changes.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Quero mandar um APK fora da Play Store para QA. Qual comando de release devo usar e onde fica o arquivo?",
+      "expected_output": "Explains APK vs AAB, recommends flutter build apk --split-per-abi for smaller APKs unless fat APK is intentional, reports build/app/outputs/flutter-apk/, and mentions flutter install for connected devices.",
+      "files": []
+    }
+  ]
+}

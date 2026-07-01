@@ -1,0 +1,28 @@
+{
+  "skill_name": "config-shared-backend",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Aplique config-shared-backend em um backend NestJS que já usa Fastify, Scalar em /docs e Swagger em /swagger. Preserve o bootstrap HTTP.",
+      "expected_output": "A camada shared é copiada, SharedModule é registrado, ApiExceptionFilter é adicionado e main.ts continua usando FastifyAdapter, setupDocs, fastifyCors e fastifyMultipart.",
+      "files": [],
+      "assertions": [
+        "apps/backend/src/main.ts still imports FastifyAdapter",
+        "apps/backend/src/main.ts still calls setupDocs(app)",
+        "apps/backend/src/main.ts contains app.useGlobalFilters(new ApiExceptionFilter())",
+        "apps/backend/src/app.module.ts imports SharedModule once"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Aplique config-shared-backend em um monorepo Bun com packageManager bun@latest.",
+      "expected_output": "Dependências ausentes são instaladas com Bun, não npm, e packages/shared é compilado usando bun run build.",
+      "files": [],
+      "assertions": [
+        "Script detects packageManager bun",
+        "Dependency installation command uses bun add",
+        "Shared package build command uses bun --cwd packages/shared run build"
+      ]
+    }
+  ]
+}

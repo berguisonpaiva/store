@@ -1,0 +1,113 @@
+import { Module } from '@nestjs/common';
+import {
+  AdicionarItem,
+  AplicarDesconto,
+  BuscarVenda,
+  CancelarVenda,
+  CaixaGateway,
+  CriarVenda,
+  EstoqueGateway,
+  FinalizarVenda,
+  ListarVendas,
+  RemoverItem,
+  ResumoVendas,
+  VendasQuery,
+  VendasRepository,
+} from '@repo/sales';
+import { DbModule } from '../../db/db.module';
+import { PrismaService } from '../../db/prisma.service';
+import { CaixaModule } from './cash-session/caixa.module';
+import { InventoryModule } from '../inventory/inventory.module';
+import { CaixaGatewayAdapter } from './adapters/caixa.gateway.adapter';
+import { EstoqueGatewayAdapter } from './adapters/estoque.gateway.adapter';
+import { VariacaoPrismaReader } from './adapters/variacao.prisma.reader';
+import { VendasPrismaQuery } from './adapters/vendas.prisma.query';
+import { VendasPrismaRepository } from './adapters/vendas.prisma.repository';
+import { VendasCommandsController } from './vendas-commands.controller';
+import { VendasQueriesController } from './vendas-queries.controller';
+
+/// Injection tokens for the domain-declared ports (interfaces have no runtime
+/// value, so the gateways are bound by string token).
+const ESTOQUE_GATEWAY = 'VENDAS_ESTOQUE_GATEWAY';
+const CAIXA_GATEWAY = 'VENDAS_CAIXA_GATEWAY';
+
+/// Composition root for the PDV sales module.
+///
+/// - `VendasRepository` -> `VendasPrismaRepository`
+/// - `VendasQuery`      -> `VendasPrismaQuery`
+/// - `EstoqueGateway`   -> `EstoqueGatewayAdapter` (delegates to the estoque sales port)
+/// - `CaixaGateway`     -> `CaixaGatewayAdapter` (delegates to the caixa cash port)
+///
+/// `finalizar-venda` / `cancelar-venda` receive the `PrismaService` as the
+/// `TransactionManager`, so repository writes commit/roll back together with the
+/// orchestrated stock/cash gateway calls (design D3).
+@Module({
+  imports: [DbModule, InventoryModule, CaixaModule],
+  controllers: [VendasCommandsController, VendasQueriesController],
+  providers: [
+    VendasPrismaRepository,
+    VendasPrismaQuery,
+    VariacaoPrismaReader,
+    EstoqueGatewayAdapter,
+    CaixaGatewayAdapter,
+    { provide: ESTOQUE_GATEWAY, useExisting: EstoqueGatewayAdapter },
+    { provide: CAIXA_GATEWAY, useExisting: CaixaGatewayAdapter },
+    {
+      provide: CriarVenda,
+      useFactory: (repo: VendasRepository, caixa: CaixaGateway) =>
+        new CriarVenda(repo, caixa),
+      inject: [VendasPrismaRepository, CAIXA_GATEWAY],
+    },
+    {
+      provide: AdicionarItem,
+      useFactory: (repo: VendasRepository) => new AdicionarItem(repo),
+      inject: [VendasPrismaRepository],
+    },
+    {
+      provide: RemoverItem,
+      useFactory: (repo: VendasRepository) => new RemoverItem(repo),
+      inject: [VendasPrismaRepository],
+    },
+    {
+      provide: AplicarDesconto,
+      useFactory: (repo: VendasRepository) => new AplicarDesconto(repo),
+      inject: [VendasPrismaRepository],
+    },
+    {
+      provide: FinalizarVenda,
+      useFactory: (
+        repo: VendasRepository,
+        estoque: EstoqueGateway,
+        caixa: CaixaGateway,
+        prisma: PrismaService,
+      ) => new FinalizarVenda(repo, estoque, caixa, prisma),
+      inject: [VendasPrismaRepository, ESTOQUE_GATEWAY, CAIXA_GATEWAY, PrismaService],
+    },
+    {
+      provide: CancelarVenda,
+      useFactory: (
+        repo: VendasRepository,
+        estoque: EstoqueGateway,
+        caixa: CaixaGateway,
+        prisma: PrismaService,
+      ) => new CancelarVenda(repo, estoque, caixa, prisma),
+      inject: [VendasPrismaRepository, ESTOQUE_GATEWAY, CAIXA_GATEWAY, PrismaService],
+    },
+    {
+      provide: BuscarVenda,
+      useFactory: (query: VendasQuery) => new BuscarVenda(query),
+      inject: [VendasPrismaQuery],
+    },
+    {
+      provide: ListarVendas,
+      useFactory: (query: VendasQuery) => new ListarVendas(query),
+      inject: [VendasPrismaQuery],
+    },
+    {
+      provide: ResumoVendas,
+      useFactory: (query: VendasQuery) => new ResumoVendas(query),
+      inject: [VendasPrismaQuery],
+    },
+  ],
+})
+export class SalesModule {}

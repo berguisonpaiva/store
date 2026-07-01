@@ -1,0 +1,32 @@
+// Staff users. The password hash lives in a SEPARATE table (UserPassword),
+// written together with the user inside a transaction. The unique index on
+// email is only a redundant safety net — uniqueness is enforced in the domain.
+
+enum UserRole {
+  MASTER
+  ADMIN
+  OPERADOR
+}
+
+model User {
+  id        String        @id @db.Uuid
+  name      String
+  email     String        @unique
+  role      UserRole
+  active    Boolean       @default(true)
+  password  UserPassword?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@map("users")
+}
+
+model UserPassword {
+  userId    String   @id @db.Uuid
+  hash      String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_passwords")
+}

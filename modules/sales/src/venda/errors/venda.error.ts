@@ -1,0 +1,17 @@
+export class VendaError {
+  static readonly SALE_NOT_FOUND = 'SALE_NOT_FOUND'
+  static readonly SALE_ALREADY_FINALIZED = 'SALE_ALREADY_FINALIZED'
+  static readonly NO_OPEN_CASH_SESSION = 'NO_OPEN_CASH_SESSION'
+  static readonly INSUFFICIENT_STOCK = 'INSUFFICIENT_STOCK'
+  static readonly PAYMENT_MISMATCH = 'PAYMENT_MISMATCH'
+
+  static readonly SALE_NOT_OPEN = 'SALE_NOT_OPEN'
+  static readonly ITEM_NOT_FOUND = 'ITEM_NOT_FOUND'
+  static readonly INVALID_QUANTITY = 'INVALID_QUANTITY'
+  static readonly INVALID_PRICE = 'INVALID_PRICE'
+  static readonly INVALID_DISCOUNT = 'INVALID_DISCOUNT'
+  static readonly DISCOUNT_EXCEEDS_SUBTOTAL = 'DISCOUNT_EXCEEDS_SUBTOTAL'
+  static readonly INVALID_PAYMENT = 'INVALID_PAYMENT'
+  static readonly SALE_HAS_NO_ITEMS = 'SALE_HAS_NO_ITEMS'
+  static readonly CASH_SESSION_CLOSED = 'CASH_SESSION_CLOSED'
+}

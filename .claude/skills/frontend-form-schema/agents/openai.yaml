@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Frontend Form Schema'
+  short_description: 'Criar forms e schemas no padrão web'
+  default_prompt: 'Crie ou revise forms React Hook Form e schemas de validação no padrão do projeto usando Zod (zodResolver), com tipagem inferida por z.infer, Server Actions para mutações simples, campos monetários/mascarados via react-number-format (NumericFormat/PatternFormat com Controller), selects com busca via @headlessui/react Combobox (Controller) e tratamento de erro.'
