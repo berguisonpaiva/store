@@ -308,18 +308,6 @@ abstract class AppLocalizations {
   /// **'Current balance'**
   String get inventoryCurrentBalance;
 
-  /// No description provided for @inventoryAvailableBalance.
-  ///
-  /// In en, this message translates to:
-  /// **'Available'**
-  String get inventoryAvailableBalance;
-
-  /// No description provided for @inventoryReserved.
-  ///
-  /// In en, this message translates to:
-  /// **'Reserved'**
-  String get inventoryReserved;
-
   /// No description provided for @inventoryMinimum.
   ///
   /// In en, this message translates to:
@@ -1297,6 +1285,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Network error. Please try again.'**
   String get vendasErrorNetwork;
+
+  /// No description provided for @vendasHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My sales'**
+  String get vendasHistoryTitle;
+
+  /// No description provided for @vendasHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No sales found.'**
+  String get vendasHistoryEmpty;
+
+  /// No description provided for @vendasHistoryFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get vendasHistoryFilterAll;
+
+  /// No description provided for @vendasHistoryNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale #{numero}'**
+  String vendasHistoryNumber(int numero);
+
+  /// No description provided for @vendasHistoryItemsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No items} =1{1 item} other{{count} items}}'**
+  String vendasHistoryItemsCount(int count);
+
+  /// No description provided for @vendasHistoryDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale detail'**
+  String get vendasHistoryDetailTitle;
+
+  /// No description provided for @vendasHistoryItemsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Items'**
+  String get vendasHistoryItemsSection;
+
+  /// No description provided for @vendasHistoryPaymentsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Payments'**
+  String get vendasHistoryPaymentsSection;
 }
 
 class _AppLocalizationsDelegate

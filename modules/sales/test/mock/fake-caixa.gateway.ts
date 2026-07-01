@@ -13,6 +13,10 @@ export class FakeCaixaGateway implements CaixaGateway {
   readonly vendasRegistradas: Array<{ sessaoCaixaId: string; valor: number }> = []
   readonly vendasEstornadas: Array<{ sessaoCaixaId: string; valor: number }> = []
 
+  /// Last transaction context seen by `registrarVenda`/`estornarVenda`. Lets tests
+  /// assert cash and stock ran on the SAME `tx` (RN09).
+  lastTx: TransactionContext | undefined
+
   async caixaAbertoDoOperador(_usuarioId: string): Promise<Result<SessaoCaixaResumo | null>> {
     return Result.ok(this.sessaoAberta)
   }
@@ -21,7 +25,8 @@ export class FakeCaixaGateway implements CaixaGateway {
     return Result.ok(this.sessaoStillOpen)
   }
 
-  async registrarVenda(sessaoCaixaId: string, valor: number, _tx?: TransactionContext): Promise<Result<void>> {
+  async registrarVenda(sessaoCaixaId: string, valor: number, tx?: TransactionContext): Promise<Result<void>> {
+    this.lastTx = tx
     if (this.failRegistrarVendaWith) {
       return Result.fail(this.failRegistrarVendaWith)
     }
@@ -29,7 +34,8 @@ export class FakeCaixaGateway implements CaixaGateway {
     return Result.ok()
   }
 
-  async estornarVenda(sessaoCaixaId: string, valor: number, _tx?: TransactionContext): Promise<Result<void>> {
+  async estornarVenda(sessaoCaixaId: string, valor: number, tx?: TransactionContext): Promise<Result<void>> {
+    this.lastTx = tx
     if (this.failEstornarVendaWith) {
       return Result.fail(this.failEstornarVendaWith)
     }

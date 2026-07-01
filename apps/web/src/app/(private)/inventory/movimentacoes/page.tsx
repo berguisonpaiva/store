@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { parsePositiveInt, parseString } from '@/modules/catalog/data/price';
 import { InventoryMovementsList } from '@/modules/estoque/components/inventory-movements-list';
@@ -27,16 +28,21 @@ export default async function InventoryMovementsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  // Inventory (Estoque) is ADMIN-only (RN04). On load, redirect any non-ADMIN to
+  // `/dashboard` before rendering any inventory data — defense in depth over the
+  // authoritative backend RolesGuard; hiding the sidebar entry is only UX.
+  const session = await auth();
+  if (session?.user?.role !== 'ADMIN') {
+    redirect('/dashboard');
+  }
+  const canAdjust = true;
+
   const sp = await searchParams;
   const variationId = parseString(sp.variationId);
   const from = parseString(sp.from);
   const to = parseString(sp.to);
   const page = parsePositiveInt(sp.page, 1);
   const pageSize = parsePositiveInt(sp.pageSize, 20);
-
-  const session = await auth();
-  const role = session?.user?.role;
-  const canAdjust = role === 'MASTER' || role === 'ADMIN';
 
   const variationOptions = await listInventoryVariationOptions();
 

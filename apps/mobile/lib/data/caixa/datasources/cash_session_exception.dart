@@ -9,7 +9,7 @@ class CashSessionException implements Exception {
 
   final String message;
 
-  /// Backend error code, e.g. `CASH_SESSION_ALREADY_OPEN`.
+  /// Backend error code, e.g. `CAIXA_JA_ABERTO`.
   final String? code;
   final int? statusCode;
 

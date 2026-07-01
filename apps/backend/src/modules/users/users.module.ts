@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import {
   ActivateUser,
-  ChangePassword,
   CreateUser,
   DeactivateUser,
   FindUserById,
@@ -43,15 +42,6 @@ import { UsersController } from './users.controller';
       provide: DeactivateUser,
       useFactory: (repo: UserPrismaRepository) => new DeactivateUser(repo),
       inject: [UserPrismaRepository],
-    },
-    {
-      provide: ChangePassword,
-      useFactory: (
-        repo: UserPrismaRepository,
-        hasher: BcryptHashGenerator,
-        comparer: BcryptHashComparer,
-      ) => new ChangePassword(repo, hasher, comparer),
-      inject: [UserPrismaRepository, BcryptHashGenerator, BcryptHashComparer],
     },
     {
       provide: FindUserById,

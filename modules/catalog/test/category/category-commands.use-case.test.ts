@@ -19,14 +19,14 @@ describe('CreateCategory', () => {
     expect(repo.items.size).toBe(1)
   })
 
-  test('rejects a duplicate name with CATEGORY_NAME_ALREADY_IN_USE', async () => {
+  test('rejects a duplicate name with CATEGORY_ALREADY_EXISTS', async () => {
     const repo = new InMemoryCategoryRepository()
     await repo.create(buildCategory({ name: 'Vestuário' }))
 
     const result = await new CreateCategory(repo).execute({ name: 'Vestuário' })
 
     expect(result.isFailure).toBe(true)
-    expect(result.errors).toContain(CategoryError.CATEGORY_NAME_ALREADY_IN_USE)
+    expect(result.errors).toContain(CategoryError.CATEGORY_ALREADY_EXISTS)
   })
 
   test('rejects an empty name', async () => {
@@ -66,7 +66,7 @@ describe('UpdateCategory', () => {
     const result = await new UpdateCategory(repo).execute({ id: target.id, name: 'Calçados' })
 
     expect(result.isFailure).toBe(true)
-    expect(result.errors).toContain(CategoryError.CATEGORY_NAME_ALREADY_IN_USE)
+    expect(result.errors).toContain(CategoryError.CATEGORY_ALREADY_EXISTS)
   })
 })
 

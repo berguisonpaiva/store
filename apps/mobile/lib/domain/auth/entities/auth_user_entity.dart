@@ -13,7 +13,7 @@ class AuthUserEntity extends Equatable {
   final String name;
   final String email;
 
-  /// Staff role (MASTER/ADMIN/OPERADOR), decoded from the access token.
+  /// Staff role (ADMIN/OPERADOR), decoded from the access token.
   final String? role;
 
   @override

@@ -25,7 +25,7 @@ import { CreateCategoryHttpDto } from './dto/create-category.http.dto';
 import { ListCategoriesQueryDto } from './dto/list-categories.query.dto';
 import { UpdateCategoryHttpDto } from './dto/update-category.http.dto';
 
-/// Category management endpoints (MASTER/ADMIN). No delete — categories are
+/// Category management endpoints (ADMIN). No delete — categories are
 /// deactivated only. Controllers contain no rules.
 @ApiTags('categories')
 @ApiBearerAuth()
@@ -41,7 +41,7 @@ export class CategoriesController {
   ) {}
 
   @Post()
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
+  @Papeis(UserRole.ADMIN)
   @ApiOperation({ summary: 'Create a category' })
   async create(@Body() dto: CreateCategoryHttpDto) {
     return unwrap(
@@ -53,30 +53,28 @@ export class CategoriesController {
   }
 
   @Patch(':id')
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
+  @Papeis(UserRole.ADMIN)
   @ApiOperation({ summary: 'Rename a category' })
   async update(@Param('id') id: string, @Body() dto: UpdateCategoryHttpDto) {
-    return unwrap(
-      await this.updateCategory.execute({ id, name: dto.name }),
-    );
+    return unwrap(await this.updateCategory.execute({ id, name: dto.name }));
   }
 
   @Patch(':id/activate')
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
+  @Papeis(UserRole.ADMIN)
   @ApiOperation({ summary: 'Activate a category' })
   async activate(@Param('id') id: string) {
     return unwrap(await this.activateCategory.execute({ id }));
   }
 
   @Patch(':id/deactivate')
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
+  @Papeis(UserRole.ADMIN)
   @ApiOperation({ summary: 'Deactivate a category' })
   async deactivate(@Param('id') id: string) {
     return unwrap(await this.deactivateCategory.execute({ id }));
   }
 
   @Get()
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
+  @Papeis(UserRole.ADMIN)
   @ApiOperation({ summary: 'List categories (optional active filter)' })
   async list(@Query() query: ListCategoriesQueryDto) {
     return unwrap(await this.listCategories.execute({ active: query.active }));

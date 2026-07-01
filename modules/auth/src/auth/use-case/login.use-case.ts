@@ -39,6 +39,14 @@ export class Login implements UseCase<LoginInputDTO, LoginOutputDTO> {
     const accessToken = await this.tokenService.generateAccessToken(identity)
     const refreshToken = await this.tokenService.generateRefreshToken(identity)
 
-    return Result.ok({ accessToken, refreshToken })
+    return Result.ok({
+      accessToken,
+      refreshToken,
+      user: {
+        id: user!.id,
+        name: user!.name,
+        role: user!.role,
+      },
+    })
   }
 }

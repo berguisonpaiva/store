@@ -12,12 +12,12 @@ import type { InventoryLowStockItemDTO } from '@/modules/estoque/data/types';
  * Dashboard (rota `/dashboard`, grupo private).
  *
  * Renderizado dentro do AdminShell. Inclui o widget de estoque abaixo do mínimo,
- * restrito a perfis MASTER/ADMIN — usuários sem acesso não o veem.
+ * restrito a perfil ADMIN — usuários sem acesso não o veem.
  */
 export default async function DashboardPage() {
   const session = await auth();
   const role = session?.user?.role;
-  const canViewLowStock = role === 'MASTER' || role === 'ADMIN';
+  const canViewLowStock = role === 'ADMIN';
 
   let lowStockItems: InventoryLowStockItemDTO[] = [];
   let lowStockForbidden = false;

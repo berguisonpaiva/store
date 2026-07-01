@@ -32,7 +32,8 @@ import { CategoriesController } from './categories.controller';
     },
     {
       provide: ActivateCategory,
-      useFactory: (repo: CategoryPrismaRepository) => new ActivateCategory(repo),
+      useFactory: (repo: CategoryPrismaRepository) =>
+        new ActivateCategory(repo),
       inject: [CategoryPrismaRepository],
     },
     {

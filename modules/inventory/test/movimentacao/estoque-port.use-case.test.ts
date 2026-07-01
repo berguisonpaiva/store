@@ -10,7 +10,7 @@ import { InMemoryCatalogVariationReader } from '../mock/in-memory-catalog-variat
 import { InMemoryEstoqueRepository } from '../mock/in-memory-estoque.repository'
 
 describe('EstoquePortService', () => {
-  test('darBaixa validates available balance and records a sale-driven exit', async () => {
+  test('darBaixa validates current balance and records a sale-driven exit', async () => {
     const repository = new InMemoryEstoqueRepository()
     const catalogReader = new InMemoryCatalogVariationReader()
     const variation = buildCatalogVariation()
@@ -18,7 +18,6 @@ describe('EstoquePortService', () => {
     repository.seedSaldo(
       EstoqueSaldo.createFromCatalogVariation(variation, {
         saldoAtual: 10,
-        quantidadeReservada: 3,
       }),
     )
     const port = new EstoquePortService(repository, catalogReader)
@@ -40,15 +39,14 @@ describe('EstoquePortService', () => {
     expect(repository.saldos.get(variation.id)!.saldoAtual).toBe(8)
   })
 
-  test('darBaixa fails when available balance is insufficient', async () => {
+  test('darBaixa fails when current balance is insufficient', async () => {
     const repository = new InMemoryEstoqueRepository()
     const catalogReader = new InMemoryCatalogVariationReader()
     const variation = buildCatalogVariation()
     catalogReader.register(variation)
     repository.seedSaldo(
       EstoqueSaldo.createFromCatalogVariation(variation, {
-        saldoAtual: 4,
-        quantidadeReservada: 4,
+        saldoAtual: 0,
       }),
     )
     const port = new EstoquePortService(repository, catalogReader)
@@ -58,6 +56,28 @@ describe('EstoquePortService', () => {
     expect(result.isFailure).toBe(true)
     expect(result.errors).toContain(EstoqueError.ESTOQUE_INSUFICIENTE)
     expect(repository.movimentacoes).toHaveLength(0)
+  })
+
+  test('darBaixa forwards the caller-supplied transaction context to the repository', async () => {
+    const repository = new InMemoryEstoqueRepository()
+    const catalogReader = new InMemoryCatalogVariationReader()
+    const variation = buildCatalogVariation()
+    catalogReader.register(variation)
+    repository.seedSaldo(EstoqueSaldo.createFromCatalogVariation(variation, { saldoAtual: 10 }))
+    const port = new EstoquePortService(repository, catalogReader)
+    const tx = {}
+
+    const result = await port.darBaixa(
+      variation.id,
+      2,
+      'sale-tx',
+      '99999999-9999-9999-9999-999999999999',
+      MotivoMovimentacaoEstoque.VENDA_PDV,
+      tx,
+    )
+
+    expect(result.isOk).toBe(true)
+    expect(repository.lastOptions?.tx).toBe(tx)
   })
 
   test('estornar records a compensating entry linked to the same origemVendaId', async () => {

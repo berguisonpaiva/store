@@ -22,13 +22,13 @@ async function bootstrap() {
     new FastifyAdapter({ trustProxy: true }),
   );
 
-  await app.register(fastifyCors as any, {
+  await app.register(fastifyCors, {
     origin: env.corsOrigin,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
 
-  await app.register(fastifyMultipart as any, {
+  await app.register(fastifyMultipart, {
     limits: {
       fieldNameSize: 100,
       fieldSize: 1 * MB,

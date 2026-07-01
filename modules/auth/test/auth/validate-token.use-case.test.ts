@@ -9,7 +9,7 @@ describe('ValidateToken', () => {
       id: 'b3f1c2d4-0000-4000-8000-000000000000',
       name: 'Ana Silva',
       email: 'ana@store.com',
-      role: UserRole.MASTER,
+      role: UserRole.ADMIN,
     })
     const useCase = new ValidateToken(tokens)
 

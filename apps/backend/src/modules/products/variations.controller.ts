@@ -43,7 +43,7 @@ export class VariationsController {
   ) {}
 
   @Post('products/:productId/variations')
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
+  @Papeis(UserRole.ADMIN)
   @ApiOperation({ summary: 'Add a variation to a product' })
   async add(
     @Param('productId') productId: string,
@@ -63,7 +63,7 @@ export class VariationsController {
   }
 
   @Patch('products/:productId/variations/:variationId')
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
+  @Papeis(UserRole.ADMIN)
   @ApiOperation({ summary: 'Edit a variation' })
   async update(
     @Param('productId') productId: string,
@@ -84,7 +84,7 @@ export class VariationsController {
   }
 
   @Patch('products/:productId/variations/:variationId/activate')
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
+  @Papeis(UserRole.ADMIN)
   @ApiOperation({ summary: 'Activate a variation' })
   async activate(
     @Param('productId') productId: string,
@@ -96,7 +96,7 @@ export class VariationsController {
   }
 
   @Patch('products/:productId/variations/:variationId/deactivate')
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
+  @Papeis(UserRole.ADMIN)
   @ApiOperation({ summary: 'Deactivate a variation' })
   async deactivate(
     @Param('productId') productId: string,
@@ -108,14 +108,14 @@ export class VariationsController {
   }
 
   @Get('variations/by-sku/:sku')
-  @Papeis(UserRole.MASTER, UserRole.ADMIN, UserRole.OPERADOR)
+  @Papeis(UserRole.ADMIN, UserRole.OPERADOR)
   @ApiOperation({ summary: 'PDV: look up a variation by exact SKU' })
   async bySku(@Param('sku') sku: string) {
     return unwrap(await this.findVariationBySku.execute({ sku }));
   }
 
   @Get('variations/by-barcode/:barcode')
-  @Papeis(UserRole.MASTER, UserRole.ADMIN, UserRole.OPERADOR)
+  @Papeis(UserRole.ADMIN, UserRole.OPERADOR)
   @ApiOperation({ summary: 'PDV: look up a variation by exact barcode' })
   async byBarcode(@Param('barcode') barcode: string) {
     return unwrap(await this.findVariationByBarcode.execute({ barcode }));

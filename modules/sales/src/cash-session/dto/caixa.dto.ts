@@ -8,12 +8,16 @@ export type AbrirCaixaInputDTO = {
 
 export type RegistrarMovimentacaoInputDTO = {
   sessaoId: string
+  /// Acting operator, derived from the authenticated context — must own the session (RN02).
+  usuarioId: string
   valor: number
   observacao?: string
 }
 
 export type FecharCaixaInputDTO = {
   sessaoId: string
+  /// Acting operator, derived from the authenticated context — must own the session (RN02).
+  usuarioId: string
   valorFechamento: number
 }
 
@@ -21,17 +25,48 @@ export type CaixaAbertoDoOperadorInputDTO = {
   operadorId: string
 }
 
+/// Papel do ator que dispara uma leitura. `ADMIN` ignora o read-scope (RN04).
+export enum PapelCaixa {
+  ADMIN = 'ADMIN',
+  OPERADOR = 'OPERADOR',
+}
+
+/// Ator autenticado de uma leitura escopada (RN03/RN04): quem pede e com qual papel.
+export type CaixaActorDTO = {
+  usuarioId: string
+  papel: PapelCaixa
+}
+
 export type ResumoSessaoInputDTO = {
   sessaoId: string
+  /// Ator autenticado; não-ADMIN só lê o próprio caixa (RN03).
+  ator: CaixaActorDTO
 }
 
 export type ListarMovimentacoesInputDTO = PaginatedInputDTO & {
   sessaoId: string
+  /// Ator autenticado; não-ADMIN só lê o próprio caixa (RN03).
+  ator: CaixaActorDTO
+}
+
+/// Breakdown of concluded-sale totals by payment form (cents), keyed by
+/// `FormaPagamento` value. Present in the close resumo (RN05).
+export type TotalPorFormaDTO = Record<string, number>
+
+/// Automatic close resumo (RN05): totals computed at `fechar-caixa`.
+/// `saldoEsperado = valorAbertura + suprimentos + vendasEmDinheiro − sangrias`.
+export type ResumoFechamentoDTO = {
+  totalVendas: number
+  qtdVendas: number
+  totalPorForma: TotalPorFormaDTO
+  sangrias: number
+  suprimentos: number
+  saldoEsperado: number
 }
 
 export type FecharCaixaResultDTO = {
   sessaoId: string
-  esperado: number
+  resumo: ResumoFechamentoDTO
   contado: number
   divergencia: number
 }
@@ -56,7 +91,10 @@ export type MovimentacaoCaixaDTO = {
 }
 
 /// Aggregated cash totals of a session (all values in cents). `contado` and
-/// `divergencia` are only present for a `FECHADO` session.
+/// `divergencia` are only present for a `FECHADA` session.
+///
+/// RN05 fields (`totalVendas`, `qtdVendas`, `totalPorForma`) summarise the
+/// concluded sales of the session and feed the automatic close resumo.
 export type ResumoSessaoDTO = {
   sessaoId: string
   status: StatusSessaoCaixa
@@ -67,6 +105,9 @@ export type ResumoSessaoDTO = {
   esperado: number
   contado: number | null
   divergencia: number | null
+  totalVendas: number
+  qtdVendas: number
+  totalPorForma: TotalPorFormaDTO
 }
 
 export function toSessaoCaixaDTO(sessao: SessaoCaixa): SessaoCaixaDTO {

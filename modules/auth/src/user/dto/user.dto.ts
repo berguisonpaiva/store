@@ -35,10 +35,10 @@ export type SetUserActiveInputDTO = {
   id: string
 }
 
-export type ChangePasswordInputDTO = {
-  id: string
-  currentPassword: string
-  newPassword: string
+export type DeactivateUserInputDTO = {
+  actorRole: UserRole
+  userId: string
+  requesterId: string
 }
 
 export type ListUsersFilterDTO = PaginatedInputDTO & {

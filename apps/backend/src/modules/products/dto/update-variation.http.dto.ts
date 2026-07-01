@@ -30,7 +30,10 @@ export class UpdateVariationHttpDto {
   @IsObject()
   attributes?: Record<string, string>;
 
-  @ApiPropertyOptional({ description: 'Price in integer cents (> 0)', minimum: 1 })
+  @ApiPropertyOptional({
+    description: 'Price in integer cents (> 0)',
+    minimum: 1,
+  })
   @IsOptional()
   @IsInt()
   @IsPositive()

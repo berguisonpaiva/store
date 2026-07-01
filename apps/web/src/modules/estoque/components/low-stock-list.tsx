@@ -41,10 +41,6 @@ export function LowStockList({
         header: 'Saldo atual',
       },
       {
-        accessorKey: 'saldoDisponivel',
-        header: 'Disponivel',
-      },
-      {
         accessorKey: 'estoqueMinimo',
         header: 'Minimo',
       },
@@ -74,7 +70,7 @@ export function LowStockList({
           <div className="p-8">
             <EmptyListState
               title="Acesso restrito"
-              subtitle="Somente perfis ADMIN e MASTER podem consultar esta lista."
+              subtitle="Somente perfis ADMIN podem consultar esta lista."
             />
           </div>
         ) : (

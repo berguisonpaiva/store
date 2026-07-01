@@ -1,10 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsOptional,
-  IsString,
-  IsUUID,
-  MinLength,
-} from 'class-validator';
+import { IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
 
 /// HTTP payload to edit a product's profile (name / description / category).
 /// Variations are managed through the dedicated variation endpoints.

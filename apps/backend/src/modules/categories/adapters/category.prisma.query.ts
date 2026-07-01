@@ -14,9 +14,7 @@ import { PrismaService } from '../../../db/prisma.service';
 export class CategoryPrismaQuery implements CategoriesQuery {
   constructor(private readonly prisma: PrismaService) {}
 
-  async list(
-    filter?: ListCategoriesFilterDTO,
-  ): Promise<Result<CategoryDTO[]>> {
+  async list(filter?: ListCategoriesFilterDTO): Promise<Result<CategoryDTO[]>> {
     const where: Prisma.CategoryWhereInput = {
       ...(filter?.active !== undefined ? { active: filter.active } : {}),
     };

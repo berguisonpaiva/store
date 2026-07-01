@@ -15,7 +15,7 @@ describe('UpdateUser', () => {
     await repository.create(user)
 
     const result = await useCase.execute({
-      actorRole: UserRole.MASTER,
+      actorRole: UserRole.ADMIN,
       id: user.id,
       name: 'Carla Dias',
       email: 'carla@store.com',
@@ -66,21 +66,6 @@ describe('UpdateUser', () => {
       actorRole: UserRole.OPERADOR,
       id: user.id,
       name: 'New Name',
-    })
-
-    expect(result.isFailure).toBe(true)
-    expect(result.errors).toContain(UserError.OPERATION_NOT_ALLOWED_FOR_ROLE)
-  })
-
-  test('blocks demoting the last active MASTER', async () => {
-    const { repository, useCase } = makeUseCase()
-    const master = buildUser({ email: 'master@store.com', role: UserRole.MASTER })
-    await repository.create(master)
-
-    const result = await useCase.execute({
-      actorRole: UserRole.MASTER,
-      id: master.id,
-      role: UserRole.ADMIN,
     })
 
     expect(result.isFailure).toBe(true)

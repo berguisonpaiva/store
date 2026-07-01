@@ -8,10 +8,23 @@ import {
   ResumoSessaoDTO,
   SessaoCaixaDTO,
   StatusSessaoCaixa,
+  StatusVenda,
   TipoMovimentacaoCaixa,
+  TotalPorFormaDTO,
 } from '@repo/sales';
 import { PrismaService } from '../../../../db/prisma.service';
 import { decimalToCents, nullableDecimalToCents } from './money';
+
+/// Backend-only filter for the ADMIN `GET /caixa` list-all route (RN04). Not part
+/// of the domain `CaixaQuery` port — it is an admin read over all operators.
+export type ListarSessoesFiltro = {
+  page: number;
+  pageSize: number;
+  usuarioId?: string;
+  status?: StatusSessaoCaixa;
+  from?: Date;
+  to?: Date;
+};
 
 /// Read-side Prisma projection for the cash aggregate (CQRS-lite). Returns DTOs
 /// with money in integer cents (converted from the persisted `Decimal` reais).
@@ -23,21 +36,56 @@ export class CaixaPrismaQuery implements CaixaQuery {
     operadorId: string,
   ): Promise<Result<SessaoCaixaDTO | null>> {
     const row = await this.prisma.client.sessaoCaixa.findFirst({
-      where: { operadorId, status: StatusSessaoCaixa.ABERTO },
+      where: { operadorId, status: StatusSessaoCaixa.ABERTA },
     });
 
     if (!row) {
       return Result.ok(null);
     }
 
+    return Result.ok(this.toSessaoDTO(row));
+  }
+
+  /// ADMIN list-all (RN04): every operator's sessions matching the filters.
+  /// Backend-only — not part of the domain `CaixaQuery` port.
+  async listarSessoes(
+    filtro: ListarSessoesFiltro,
+  ): Promise<Result<PaginatedResultDTO<SessaoCaixaDTO>>> {
+    const where: Prisma.SessaoCaixaWhereInput = {};
+    if (filtro.usuarioId) {
+      where.operadorId = filtro.usuarioId;
+    }
+    if (filtro.status) {
+      where.status = filtro.status;
+    }
+    if (filtro.from || filtro.to) {
+      where.abertaEm = {};
+      if (filtro.from) {
+        where.abertaEm.gte = filtro.from;
+      }
+      if (filtro.to) {
+        where.abertaEm.lte = filtro.to;
+      }
+    }
+
+    const [rows, total] = await Promise.all([
+      this.prisma.client.sessaoCaixa.findMany({
+        where,
+        orderBy: { abertaEm: 'desc' },
+        skip: (filtro.page - 1) * filtro.pageSize,
+        take: filtro.pageSize,
+      }),
+      this.prisma.client.sessaoCaixa.count({ where }),
+    ]);
+
     return Result.ok({
-      id: row.id,
-      operadorId: row.operadorId,
-      status: row.status as StatusSessaoCaixa,
-      valorAbertura: decimalToCents(row.valorAbertura),
-      valorFechamento: nullableDecimalToCents(row.valorFechamento),
-      abertaEm: row.abertaEm,
-      fechadaEm: row.fechadaEm,
+      data: rows.map((row) => this.toSessaoDTO(row)),
+      meta: {
+        page: filtro.page,
+        pageSize: filtro.pageSize,
+        total,
+        totalPages: Math.ceil(total / filtro.pageSize),
+      },
     });
   }
 
@@ -60,7 +108,10 @@ export class CaixaPrismaQuery implements CaixaQuery {
 
     const totals = new Map<string, number>();
     for (const group of grouped) {
-      totals.set(group.tipo, decimalToCents(group._sum.valor ?? new Prisma.Decimal(0)));
+      totals.set(
+        group.tipo,
+        decimalToCents(group._sum.valor ?? new Prisma.Decimal(0)),
+      );
     }
 
     const abertura = decimalToCents(sessao.valorAbertura);
@@ -72,6 +123,30 @@ export class CaixaPrismaQuery implements CaixaQuery {
     const contado = nullableDecimalToCents(sessao.valorFechamento);
     const divergencia = contado === null ? null : contado - esperado;
 
+    // RN05: summarise the concluded sales of the session (count, total, and
+    // per-payment-form breakdown) for the automatic close resumo.
+    const [salesAggregate, porFormaGroups] = await Promise.all([
+      this.prisma.client.venda.aggregate({
+        where: { sessaoCaixaId: sessaoId, status: StatusVenda.CONCLUIDA },
+        _count: { _all: true },
+        _sum: { total: true },
+      }),
+      this.prisma.client.pagamento.groupBy({
+        by: ['forma'],
+        where: {
+          venda: { sessaoCaixaId: sessaoId, status: StatusVenda.CONCLUIDA },
+        },
+        _sum: { valor: true },
+      }),
+    ]);
+
+    const totalPorForma: TotalPorFormaDTO = {};
+    for (const group of porFormaGroups) {
+      totalPorForma[group.forma] = decimalToCents(
+        group._sum.valor ?? new Prisma.Decimal(0),
+      );
+    }
+
     return Result.ok({
       sessaoId: sessao.id,
       status: sessao.status as StatusSessaoCaixa,
@@ -82,7 +157,32 @@ export class CaixaPrismaQuery implements CaixaQuery {
       esperado,
       contado,
       divergencia,
+      totalVendas: decimalToCents(
+        salesAggregate._sum.total ?? new Prisma.Decimal(0),
+      ),
+      qtdVendas: salesAggregate._count._all,
+      totalPorForma,
     });
+  }
+
+  private toSessaoDTO(row: {
+    id: string;
+    operadorId: string;
+    status: string;
+    valorAbertura: Prisma.Decimal;
+    valorFechamento: Prisma.Decimal | null;
+    abertaEm: Date;
+    fechadaEm: Date | null;
+  }): SessaoCaixaDTO {
+    return {
+      id: row.id,
+      operadorId: row.operadorId,
+      status: row.status as StatusSessaoCaixa,
+      valorAbertura: decimalToCents(row.valorAbertura),
+      valorFechamento: nullableDecimalToCents(row.valorFechamento),
+      abertaEm: row.abertaEm,
+      fechadaEm: row.fechadaEm,
+    };
   }
 
   async listarMovimentacoes(

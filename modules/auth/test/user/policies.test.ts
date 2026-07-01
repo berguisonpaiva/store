@@ -1,5 +1,4 @@
 import {
-  LastMasterPolicy,
   RoleAuthorizationPolicy,
   UniqueEmailSpecification,
   UserError,
@@ -8,10 +7,7 @@ import {
 import { buildUser } from '../mock/user-builder'
 
 describe('RoleAuthorizationPolicy', () => {
-  test('allows MASTER and ADMIN, blocks OPERADOR', () => {
-    expect(
-      RoleAuthorizationPolicy.ensureCanManageUsers(UserRole.MASTER).isOk,
-    ).toBe(true)
+  test('allows ADMIN, blocks OPERADOR', () => {
     expect(
       RoleAuthorizationPolicy.ensureCanManageUsers(UserRole.ADMIN).isOk,
     ).toBe(true)
@@ -39,24 +35,5 @@ describe('UniqueEmailSpecification', () => {
     const result = UniqueEmailSpecification.ensureUnique(other, 'another-id')
     expect(result.isFailure).toBe(true)
     expect(result.errors).toContain(UserError.EMAIL_ALREADY_IN_USE)
-  })
-})
-
-describe('LastMasterPolicy', () => {
-  test('blocks deactivating the only active MASTER', () => {
-    const master = buildUser({ role: UserRole.MASTER })
-    expect(LastMasterPolicy.ensureCanDeactivate(master, 1).isFailure).toBe(true)
-  })
-
-  test('allows deactivating when another MASTER exists', () => {
-    const master = buildUser({ role: UserRole.MASTER })
-    expect(LastMasterPolicy.ensureCanDeactivate(master, 2).isOk).toBe(true)
-  })
-
-  test('blocks demoting the only active MASTER', () => {
-    const master = buildUser({ role: UserRole.MASTER })
-    expect(
-      LastMasterPolicy.ensureCanChangeRole(master, UserRole.ADMIN, 1).isFailure,
-    ).toBe(true)
   })
 })

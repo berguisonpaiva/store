@@ -23,9 +23,11 @@ import '../../domain/inventory/usecases/register_entry_usecase.dart';
 import '../../domain/inventory/usecases/register_exit_usecase.dart';
 import '../../domain/vendas/usecases/adicionar_item_usecase.dart';
 import '../../domain/vendas/usecases/aplicar_desconto_usecase.dart';
+import '../../domain/vendas/usecases/buscar_venda_usecase.dart';
 import '../../domain/vendas/usecases/cancelar_venda_usecase.dart';
 import '../../domain/vendas/usecases/criar_venda_usecase.dart';
 import '../../domain/vendas/usecases/finalizar_venda_usecase.dart';
+import '../../domain/vendas/usecases/listar_vendas_usecase.dart';
 import '../../domain/vendas/usecases/remover_item_usecase.dart';
 import '../../ui/auth/view_model/auth_session_cubit.dart';
 import '../../ui/auth/view_model/login_cubit.dart';
@@ -35,7 +37,9 @@ import '../../ui/caixa/view_model/sessao_ativa_cubit.dart';
 import '../../ui/home/view_model/home_cubit.dart';
 import '../../ui/inventory/view_model/balance_lookup_cubit.dart';
 import '../../ui/inventory/view_model/low_stock_cubit.dart';
+import '../../ui/vendas/view_model/venda_detail_cubit.dart';
 import '../../ui/vendas/view_model/venda_pdv_cubit.dart';
+import '../../ui/vendas/view_model/vendas_history_cubit.dart';
 import '../../ui/catalog/view_model/product_detail_cubit.dart';
 import '../../ui/catalog/view_model/products_cubit.dart';
 import '../../ui/catalog/view_model/variation_lookup_cubit.dart';
@@ -103,6 +107,13 @@ void registerUiModule(GetIt gi) {
       finalizarVenda: gi<FinalizarVendaUseCase>(),
       cancelarVenda: gi<CancelarVendaUseCase>(),
     ),
+  );
+
+  gi.registerFactory(
+    () => VendasHistoryCubit(listarVendas: gi<ListarVendasUseCase>()),
+  );
+  gi.registerFactory(
+    () => VendaDetailCubit(buscarVenda: gi<BuscarVendaUseCase>()),
   );
 
   gi.registerFactory(

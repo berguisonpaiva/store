@@ -1,8 +1,11 @@
+import { CategoryError } from '../../src/category'
 import {
+  ActiveCategorySpecification,
   ProductError,
   UniqueBarcodeSpecification,
   UniqueSkuSpecification,
 } from '../../src/product'
+import { buildCategory } from '../mock/category-builder'
 import { buildProduct, buildVariationProps } from '../mock/product-builder'
 
 describe('UniqueSkuSpecification', () => {
@@ -51,5 +54,25 @@ describe('UniqueBarcodeSpecification', () => {
     const selfId = owner.variations[0]!.id
 
     expect(UniqueBarcodeSpecification.ensureUnique('789', owner, selfId).isOk).toBe(true)
+  })
+})
+
+describe('ActiveCategorySpecification', () => {
+  test('fails with CATEGORY_NOT_FOUND when the category is null', () => {
+    const result = ActiveCategorySpecification.ensureUsable(null)
+
+    expect(result.isFailure).toBe(true)
+    expect(result.errors).toContain(CategoryError.CATEGORY_NOT_FOUND)
+  })
+
+  test('fails with CATEGORY_INACTIVE when the category is inactive', () => {
+    const result = ActiveCategorySpecification.ensureUsable(buildCategory({ active: false }))
+
+    expect(result.isFailure).toBe(true)
+    expect(result.errors).toContain(CategoryError.CATEGORY_INACTIVE)
+  })
+
+  test('passes for an active category', () => {
+    expect(ActiveCategorySpecification.ensureUsable(buildCategory()).isOk).toBe(true)
   })
 })

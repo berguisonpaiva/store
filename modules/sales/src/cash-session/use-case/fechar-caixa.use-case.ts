@@ -3,8 +3,9 @@ import { FecharCaixaInputDTO, FecharCaixaResultDTO } from '../dto'
 import { CaixaError } from '../errors'
 import { CaixaQuery, CaixaRepository, PendingSalePredicate } from '../provider'
 
-/// Closes an `ABERTO` session with a counted `valorFechamento`, computing the
-/// divergence against the expected balance. Blocked while a sale is still
+/// Closes an `ABERTA` session with a counted `valorFechamento`, computing the
+/// automatic resumo (RN05) and the divergence against the expected balance.
+/// Only the owning operator may close (RN02). Blocked while a sale is still
 /// `ABERTA` in the session (RF-CX-07/RF-CX-08).
 export class FecharCaixa implements UseCase<FecharCaixaInputDTO, FecharCaixaResultDTO> {
   constructor(
@@ -19,10 +20,14 @@ export class FecharCaixa implements UseCase<FecharCaixaInputDTO, FecharCaixaResu
       return sessao.withFail
     }
     if (!sessao.instance) {
-      return Result.fail(CaixaError.CASH_SESSION_NOT_FOUND)
+      return Result.fail(CaixaError.CAIXA_NAO_ENCONTRADO)
+    }
+    // RN02: only the session owner operates it.
+    if (sessao.instance.operadorId !== input.usuarioId) {
+      return Result.fail(CaixaError.NAO_E_DONO_DO_CAIXA)
     }
     if (!sessao.instance.aberta) {
-      return Result.fail(CaixaError.CASH_SESSION_ALREADY_CLOSED)
+      return Result.fail(CaixaError.CAIXA_JA_FECHADO)
     }
 
     const pending = await this.pendingSale.hasPendingSale(sessao.instance.id)
@@ -30,7 +35,7 @@ export class FecharCaixa implements UseCase<FecharCaixaInputDTO, FecharCaixaResu
       return pending.withFail
     }
     if (pending.instance) {
-      return Result.fail(CaixaError.PENDING_SALE_IN_SESSION)
+      return Result.fail(CaixaError.VENDA_PENDENTE_NO_FECHAMENTO)
     }
 
     const resumo = await this.query.resumoSessao(sessao.instance.id)
@@ -38,7 +43,7 @@ export class FecharCaixa implements UseCase<FecharCaixaInputDTO, FecharCaixaResu
       return resumo.withFail
     }
     if (!resumo.instance) {
-      return Result.fail(CaixaError.CASH_SESSION_NOT_FOUND)
+      return Result.fail(CaixaError.CAIXA_NAO_ENCONTRADO)
     }
 
     const closed = sessao.instance.fechar(input.valorFechamento)
@@ -56,7 +61,14 @@ export class FecharCaixa implements UseCase<FecharCaixaInputDTO, FecharCaixaResu
 
     return Result.ok({
       sessaoId: persisted.instance.id,
-      esperado,
+      resumo: {
+        totalVendas: resumo.instance.totalVendas,
+        qtdVendas: resumo.instance.qtdVendas,
+        totalPorForma: resumo.instance.totalPorForma,
+        sangrias: resumo.instance.sangrias,
+        suprimentos: resumo.instance.suprimentos,
+        saldoEsperado: esperado,
+      },
       contado,
       divergencia: contado - esperado,
     })

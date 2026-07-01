@@ -3,7 +3,7 @@ import type { CategoryDTO } from '../data/types';
 /**
  * Form value shape + inline validation rules for the category form (RHF, no
  * Zod). Name uniqueness is decided by the backend (409 →
- * `CATEGORY_NAME_ALREADY_IN_USE`), surfaced inline on the name field.
+ * `CATEGORY_ALREADY_EXISTS`), surfaced inline on the name field.
  */
 
 export type CategoryFormValues = {

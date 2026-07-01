@@ -4,12 +4,22 @@ import { decodeJwt } from 'jose';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
+/** Application roles (single-tenant scope). MASTER was removed. */
+export type UserRole = 'ADMIN' | 'OPERADOR';
+
 type AccessClaims = {
   sub: string;
   name?: string;
   email?: string;
   role?: string;
   exp?: number;
+};
+
+/** User identity returned by `POST /api/auth/login` alongside the tokens. */
+type LoginUser = {
+  id: string;
+  name: string;
+  role: UserRole;
 };
 
 async function refreshAccessToken(token: any) {
@@ -55,17 +65,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
         if (!res.ok) return null;
 
-        const { accessToken, refreshToken } = (await res.json()) as {
+        const { accessToken, refreshToken, user } = (await res.json()) as {
           accessToken: string;
           refreshToken: string;
+          user?: LoginUser;
         };
         const claims = decodeJwt(accessToken) as AccessClaims;
 
+        // Prefer the `user` object returned by login for id/name/role; fall back
+        // to the token claims for backwards compatibility.
         return {
-          id: claims.sub,
-          name: claims.name ?? null,
+          id: user?.id ?? claims.sub,
+          name: user?.name ?? claims.name ?? null,
           email: claims.email ?? email,
-          role: claims.role,
+          role: user?.role ?? (claims.role as UserRole | undefined),
           accessToken,
           refreshToken,
           accessTokenExpires: (claims.exp ?? 0) * 1000,

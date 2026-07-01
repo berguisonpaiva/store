@@ -68,7 +68,7 @@ export class MovimentacaoCaixa extends Entity<MovimentacaoCaixa, MovimentacaoCai
   }
 
   override cloneWith(_: Partial<MovimentacaoCaixaProps>): Result<MovimentacaoCaixa> {
-    return Result.fail(CaixaError.VALOR_MOVIMENTACAO_INVALIDO)
+    return Result.fail(CaixaError.VALOR_INVALIDO)
   }
 
   get sessaoId(): string {

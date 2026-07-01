@@ -67,15 +67,11 @@ describe('Inventory controllers', () => {
       Result.ok({
         variacaoId: '11111111-1111-1111-1111-111111111111',
         saldoAtual: 10,
-        quantidadeReservada: 2,
-        saldoDisponivel: 8,
         estoqueMinimo: 3,
       }),
     );
 
-    await queriesController.getBalance(
-      '11111111-1111-1111-1111-111111111111',
-    );
+    await queriesController.getBalance('11111111-1111-1111-1111-111111111111');
 
     expect(consultarSaldo.execute).toHaveBeenCalledWith({
       variacaoId: '11111111-1111-1111-1111-111111111111',

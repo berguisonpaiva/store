@@ -27,8 +27,6 @@ void main() {
         (_) async => StockBalanceDto.fromJson(const {
           'variacaoId': 'v1',
           'saldoAtual': 10,
-          'quantidadeReservada': 2,
-          'saldoDisponivel': 8,
           'estoqueMinimo': 3,
         }),
       );
@@ -37,7 +35,7 @@ void main() {
 
       expect(result.isRight(), isTrue);
       final balance = result.getRight().toNullable()!;
-      expect(balance.saldoDisponivel, 8);
+      expect(balance.saldoAtual, 10);
       expect(balance.isBelowMinimum, isFalse);
     });
 
@@ -116,8 +114,6 @@ void main() {
           LowStockItemDto.fromJson(const {
             'variacaoId': 'v1',
             'saldoAtual': 1,
-            'quantidadeReservada': 0,
-            'saldoDisponivel': 1,
             'estoqueMinimo': 5,
           }),
         ],

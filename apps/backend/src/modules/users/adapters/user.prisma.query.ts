@@ -1,11 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PaginatedResultDTO, Result } from '@repo/shared';
-import {
-  ListUsersFilterDTO,
-  UserDTO,
-  UserQuery,
-  UserRole,
-} from '@repo/auth';
+import { ListUsersFilterDTO, UserDTO, UserQuery, UserRole } from '@repo/auth';
 import { PrismaService } from '../../../db/prisma.service';
 
 /// Read-side adapter for `UserQuery`: paginated, filtered projection that never
@@ -18,7 +13,7 @@ export class UserPrismaQuery implements UserQuery {
     filter: ListUsersFilterDTO,
   ): Promise<Result<PaginatedResultDTO<UserDTO>>> {
     const where = {
-      ...(filter.role !== undefined ? { role: filter.role as UserRole } : {}),
+      ...(filter.role !== undefined ? { role: filter.role } : {}),
       ...(filter.active !== undefined ? { active: filter.active } : {}),
     };
 

@@ -19,7 +19,9 @@ import '../../ui/inventory/stock_adjustment_page.dart';
 import '../../ui/inventory/stock_entry_page.dart';
 import '../../ui/inventory/stock_exit_page.dart';
 import '../../ui/splash/splash_page.dart';
+import '../../ui/vendas/venda_detail_page.dart';
 import '../../ui/vendas/venda_pdv_page.dart';
+import '../../ui/vendas/vendas_history_page.dart';
 import 'go_router_refresh_stream.dart';
 
 /// Builds the app router guarded by [AuthSessionCubit].
@@ -89,6 +91,21 @@ GoRouter createAppRouter(AuthSessionCubit session) {
         path: '/vendas',
         builder: (context, state) =>
             VendaPdvPage(onOpenCash: () => context.go('/caixa')),
+        routes: [
+          GoRoute(
+            path: 'historico',
+            builder: (context, state) => VendasHistoryPage(
+              onOpenVenda: (id) => context.push('/vendas/historico/$id'),
+            ),
+            routes: [
+              GoRoute(
+                path: ':id',
+                builder: (context, state) =>
+                    VendaDetailPage(vendaId: state.pathParameters['id']!),
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
         path: '/inventory',

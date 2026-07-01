@@ -44,10 +44,6 @@ export class User extends Entity<User, UserProps> {
     return this.props.active
   }
 
-  get isMaster(): boolean {
-    return this.props.role === UserRole.MASTER
-  }
-
   static create(props: UserProps): User {
     const result = User.tryCreate(props)
     result.validator.throwsIfFailed()
@@ -87,8 +83,8 @@ export class User extends Entity<User, UserProps> {
     return this.cloneWith({ active: true })
   }
 
-  /// Deactivates the user. The last-active-MASTER rule is enforced by the
-  /// use case via `LastMasterPolicy`, not here.
+  /// Deactivates the user. The cannot-deactivate-self rule is enforced by the
+  /// use case, not here.
   deactivate(): Result<User> {
     return this.cloneWith({ active: false })
   }

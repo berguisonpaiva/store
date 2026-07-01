@@ -2,15 +2,20 @@
 
 import type { ReactNode } from 'react';
 import {
-  Banknote,
-  History,
+  Boxes,
   LayoutDashboard,
   Package,
   ShoppingCart,
   Tags,
+  Users,
+  WalletCards,
 } from 'lucide-react';
 import { AdminShell } from '@/components/layout/admin-shell';
-import { SidebarMenu, type SidebarMenuSection } from '@/components/ui/sidebar-menu';
+import {
+  SidebarMenu,
+  type SidebarMenuItem,
+  type SidebarMenuSection,
+} from '@/components/ui/sidebar-menu';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { logoutAction } from './actions';
 
@@ -38,18 +43,43 @@ type PrivateShellProps = {
   userRole?: string;
 };
 
+/**
+ * Flat admin-console navigation (Shopify/Stripe-style): a single unlabeled list
+ * of icon-led destinations. There are no section headers — the whole console is
+ * one surface. `Usuários` is pinned separately at the bottom via
+ * {@link buildFooterItems} (the "settings at the bottom" pattern). ADMIN-only
+ * entries carry a `roles` list; hiding them is UX reinforcement (RN04/RN07),
+ * never a security boundary — the backend `RolesGuard` and each route's on-load
+ * guard are authoritative.
+ */
 function buildNavigationSections(): SidebarMenuSection[] {
   return [
     {
       id: 'main',
-      label: 'Navegação',
+      // No label: this is the single flat primary list of the admin console.
       items: [
         {
           id: 'dashboard',
-          label: 'Dashboard',
+          label: 'Início',
           href: '/dashboard',
           icon: LayoutDashboard,
           match: 'prefix',
+        },
+        {
+          id: 'vendas',
+          label: 'Vendas',
+          href: '/vendas',
+          icon: ShoppingCart,
+          match: 'prefix',
+          roles: ['ADMIN'],
+        },
+        {
+          id: 'caixas',
+          label: 'Caixas',
+          href: '/caixas',
+          icon: WalletCards,
+          match: 'prefix',
+          roles: ['ADMIN'],
         },
         {
           id: 'products',
@@ -57,6 +87,7 @@ function buildNavigationSections(): SidebarMenuSection[] {
           href: '/products',
           icon: Package,
           match: 'prefix',
+          roles: ['ADMIN'],
         },
         {
           id: 'categories',
@@ -64,43 +95,68 @@ function buildNavigationSections(): SidebarMenuSection[] {
           href: '/categories',
           icon: Tags,
           match: 'prefix',
+          roles: ['ADMIN'],
         },
-      ],
-    },
-    {
-      id: 'caixa',
-      label: 'Caixa',
-      items: [
-        {
-          id: 'caixa',
-          label: 'Caixa (PDV)',
-          href: '/caixa',
-          icon: Banknote,
-          match: 'prefix',
-        },
-        {
-          id: 'vendas',
-          label: 'Venda (PDV)',
-          href: '/vendas',
-          icon: ShoppingCart,
-          match: 'prefix',
-        },
-      ],
-    },
-    {
-      id: 'inventory',
-      label: 'Estoque',
-      items: [
         {
           id: 'inventory-movements',
-          label: 'Movimentações',
+          label: 'Estoque',
           href: '/inventory/movimentacoes',
-          icon: History,
+          icon: Boxes,
           match: 'prefix',
+          roles: ['ADMIN'],
         },
       ],
     },
   ];
+}
+
+/**
+ * Items pinned to the bottom of the sidebar (visually separated from the
+ * primary list). Same `roles` filtering applies.
+ */
+function buildFooterItems(): SidebarMenuItem[] {
+  return [
+    {
+      id: 'usuarios',
+      label: 'Usuários',
+      href: '/usuarios',
+      icon: Users,
+      match: 'prefix',
+      roles: ['ADMIN'],
+    },
+  ];
+}
+
+/**
+ * Filters footer items by role, mirroring {@link filterSectionsByRole}. An item
+ * with a `roles` list is kept only when the current role is included.
+ */
+function filterItemsByRole(
+  items: SidebarMenuItem[],
+  role: string | undefined,
+): SidebarMenuItem[] {
+  return items.filter(
+    (item) => !item.roles || (role !== undefined && item.roles.includes(role)),
+  );
+}
+
+/**
+ * Filters navigation by the session role: an item with a `roles` list is kept
+ * only when the current role is included; sections that become empty are
+ * dropped. This is UX reinforcement only (RN04) — never a security boundary.
+ */
+function filterSectionsByRole(
+  sections: SidebarMenuSection[],
+  role: string | undefined,
+): SidebarMenuSection[] {
+  return sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(
+        (item) => !item.roles || (role !== undefined && item.roles.includes(role)),
+      ),
+    }))
+    .filter((section) => section.items.length > 0);
 }
 
 /**
@@ -119,13 +175,21 @@ export function PrivateShell({
   userName,
   userEmail,
   userAvatarUrl,
+  userRole,
 }: PrivateShellProps) {
-  const sections = buildNavigationSections();
+  const sections = filterSectionsByRole(buildNavigationSections(), userRole);
+  const footerItems = filterItemsByRole(buildFooterItems(), userRole);
 
   return (
     <SidebarProvider defaultOpen>
       <AdminShell
-        sidebar={<SidebarMenu sections={sections} homeHref={HOME_ROUTE} />}
+        sidebar={
+          <SidebarMenu
+            sections={sections}
+            footerItems={footerItems}
+            homeHref={HOME_ROUTE}
+          />
+        }
         logoHref={HOME_ROUTE}
         userName={userName}
         userEmail={userEmail}

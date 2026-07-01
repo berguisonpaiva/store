@@ -1,11 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Result, TransactionContext } from '@repo/shared';
-import {
-  CategoriesRepository,
-  Category,
-  CategoryError,
-} from '@repo/catalog';
+import { CategoriesRepository, Category, CategoryError } from '@repo/catalog';
 import {
   PrismaService,
   PrismaTransactionContext,
@@ -16,12 +12,15 @@ type CategoryRow = Prisma.CategoryGetPayload<object>;
 /// Prisma adapter for the domain `CategoriesRepository`. Categories are never
 /// hard-deleted (only deactivated). Uniqueness of the name is decided in the
 /// domain; the unique index is a redundant safety net mapped back to
-/// `CATEGORY_NAME_ALREADY_IN_USE`.
+/// `CATEGORY_ALREADY_EXISTS`.
 @Injectable()
 export class CategoryPrismaRepository implements CategoriesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(entity: Category, tx?: TransactionContext): Promise<Result<void>> {
+  async create(
+    entity: Category,
+    tx?: TransactionContext,
+  ): Promise<Result<void>> {
     try {
       await this.clientFrom(tx).category.create({
         data: {
@@ -36,7 +35,10 @@ export class CategoryPrismaRepository implements CategoriesRepository {
     }
   }
 
-  async update(entity: Category, tx?: TransactionContext): Promise<Result<void>> {
+  async update(
+    entity: Category,
+    tx?: TransactionContext,
+  ): Promise<Result<void>> {
     try {
       await this.clientFrom(tx).category.update({
         where: { id: entity.id },
@@ -58,7 +60,9 @@ export class CategoryPrismaRepository implements CategoriesRepository {
   }
 
   async findByName(name: string): Promise<Result<Category | null>> {
-    const row = await this.prisma.client.category.findUnique({ where: { name } });
+    const row = await this.prisma.client.category.findUnique({
+      where: { name },
+    });
     if (!row) return Result.ok(null);
     const category = this.toDomain(row);
     if (category.isFailure) return category.withFail;
@@ -85,7 +89,7 @@ export class CategoryPrismaRepository implements CategoriesRepository {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === 'P2002'
     ) {
-      return Result.fail(CategoryError.CATEGORY_NAME_ALREADY_IN_USE);
+      return Result.fail(CategoryError.CATEGORY_ALREADY_EXISTS);
     }
     throw error;
   }

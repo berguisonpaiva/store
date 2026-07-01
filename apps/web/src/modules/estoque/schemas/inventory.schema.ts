@@ -32,17 +32,17 @@ export const exitInventorySchema = z
     motivo: z.enum(['PERDA', 'AJUSTE'], {
       error: 'Selecione um motivo.',
     }),
-    saldoDisponivel: z.number().optional(),
+    saldoAtual: z.number().optional(),
   })
   .superRefine((values, ctx) => {
     if (
-      typeof values.saldoDisponivel === 'number'
-      && values.quantidade > values.saldoDisponivel
+      typeof values.saldoAtual === 'number'
+      && values.quantidade > values.saldoAtual
     ) {
       ctx.addIssue({
         code: 'custom',
         path: ['quantidade'],
-        message: 'A quantidade nao pode exceder o saldo disponivel.',
+        message: 'A quantidade nao pode exceder o saldo atual.',
       });
     }
   });
@@ -91,7 +91,7 @@ export function exitInventoryDefaults(): ExitInventoryFormInput {
     variacaoId: '',
     quantidade: 1,
     motivo: 'PERDA',
-    saldoDisponivel: undefined,
+    saldoAtual: undefined,
   };
 }
 

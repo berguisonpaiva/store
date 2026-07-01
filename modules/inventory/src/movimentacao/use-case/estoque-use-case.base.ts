@@ -1,5 +1,5 @@
 import { Variation } from '@repo/catalog'
-import { Result } from '@repo/shared'
+import { Result, TransactionContext } from '@repo/shared'
 import { EstoqueError } from '../errors'
 import { EstoqueSaldo, MovimentacaoEstoque, MotivoMovimentacaoEstoque, TipoMovimentacao } from '../model'
 import { CatalogVariationReader, EstoqueRepository } from '../provider'
@@ -64,6 +64,7 @@ export abstract class EstoqueUseCaseBase {
       origemVendaId?: string
       criadoEm?: Date
       saldoAbsoluto?: boolean
+      tx?: TransactionContext
     },
   ): Promise<Result<void>> {
     const ledgerEntry = MovimentacaoEstoque.tryCreate({
@@ -89,6 +90,7 @@ export abstract class EstoqueUseCaseBase {
 
     return this.repository.aplicarMovimentacao(ledgerEntry.instance, nextBalance.instance, {
       saldoAbsoluto: movement.saldoAbsoluto,
+      tx: movement.tx,
     })
   }
 }

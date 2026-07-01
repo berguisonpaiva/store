@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { Result } from '@repo/shared';
 import { FormaPagamento, StatusVenda, Venda } from '@repo/sales';
 import { MotivoMovimentacaoEstoque } from '@repo/inventory';
 import { PrismaService } from '../../db/prisma.service';
@@ -55,8 +56,10 @@ function makePrisma(overrides: Partial<Record<string, any>> = {}) {
 }
 
 function openSaleWithItem(): Venda {
-  const aberta = Venda.abrir({ usuarioId: USUARIO_ID, sessaoCaixaId: SESSAO_ID })
-    .instance;
+  const aberta = Venda.abrir({
+    usuarioId: USUARIO_ID,
+    sessaoCaixaId: SESSAO_ID,
+  }).instance;
   return aberta.adicionarItem({
     variacaoId: VARIACAO_ID,
     quantidade: 2,
@@ -117,7 +120,11 @@ describe('VendasPrismaRepository.toDomain/fromDomain', () => {
         },
       ],
       pagamentos: [
-        { id: PAY_ID, forma: FormaPagamento.DINHEIRO, valor: new Prisma.Decimal('25.00') },
+        {
+          id: PAY_ID,
+          forma: FormaPagamento.DINHEIRO,
+          valor: new Prisma.Decimal('25.00'),
+        },
       ],
     });
 
@@ -164,7 +171,9 @@ describe('VendasPrismaRepository.toDomain/fromDomain', () => {
     expect(result.isOk).toBe(true);
     expect(client.$queryRaw).toHaveBeenCalledTimes(1);
     expect(venda.update.mock.calls[0][0].data.numero).toBe(100);
-    expect(venda.update.mock.calls[0][0].data.status).toBe(StatusVenda.CONCLUIDA);
+    expect(venda.update.mock.calls[0][0].data.status).toBe(
+      StatusVenda.CONCLUIDA,
+    );
   });
 
   test('update does NOT assign numero for a still-open sale', async () => {
@@ -196,8 +205,16 @@ describe('VendasPrismaQuery', () => {
     });
     // RF30: two payment methods used; the other two must come back zero-filled.
     pagamento.groupBy.mockResolvedValue([
-      { forma: FormaPagamento.DINHEIRO, _sum: { valor: new Prisma.Decimal('50.00') }, _count: { _all: 2 } },
-      { forma: FormaPagamento.PIX, _sum: { valor: new Prisma.Decimal('30.00') }, _count: { _all: 1 } },
+      {
+        forma: FormaPagamento.DINHEIRO,
+        _sum: { valor: new Prisma.Decimal('50.00') },
+        _count: { _all: 2 },
+      },
+      {
+        forma: FormaPagamento.PIX,
+        _sum: { valor: new Prisma.Decimal('30.00') },
+        _count: { _all: 1 },
+      },
     ]);
 
     const result = await query.resumo({ status: StatusVenda.CONCLUIDA });
@@ -220,11 +237,14 @@ describe('VendasPrismaQuery', () => {
 
 describe('EstoqueGatewayAdapter', () => {
   test('darBaixa delegates to the estoque port with VENDA_PDV', async () => {
-    const port = { darBaixa: jest.fn().mockResolvedValue({ isFailure: false }) };
+    const port = {
+      darBaixa: jest.fn().mockResolvedValue({ isFailure: false }),
+    };
     const repo = {} as any;
     const adapter = new EstoqueGatewayAdapter(port as any, repo);
 
-    await adapter.darBaixa(VARIACAO_ID, 2, 'venda-1', 'operador-1');
+    const tx = {} as any;
+    await adapter.darBaixa(VARIACAO_ID, 2, 'venda-1', 'operador-1', tx);
 
     expect(port.darBaixa).toHaveBeenCalledWith(
       VARIACAO_ID,
@@ -232,6 +252,7 @@ describe('EstoqueGatewayAdapter', () => {
       'venda-1',
       'operador-1',
       MotivoMovimentacaoEstoque.VENDA_PDV,
+      tx,
     );
   });
 
@@ -241,7 +262,12 @@ describe('EstoqueGatewayAdapter', () => {
     };
     const adapter = new EstoqueGatewayAdapter(port as any, {} as any);
 
-    const result = await adapter.darBaixa(VARIACAO_ID, 2, 'venda-1', 'operador-1');
+    const result = await adapter.darBaixa(
+      VARIACAO_ID,
+      2,
+      'venda-1',
+      'operador-1',
+    );
 
     expect(result.isFailure).toBe(true);
     expect(result.errors).toContain('INSUFFICIENT_STOCK');
@@ -253,7 +279,8 @@ describe('EstoqueGatewayAdapter', () => {
     };
     const adapter = new EstoqueGatewayAdapter(port as any, {} as any);
 
-    await adapter.estornar(VARIACAO_ID, 2, 'venda-1', 'operador-1');
+    const tx = {} as any;
+    await adapter.estornar(VARIACAO_ID, 2, 'venda-1', 'operador-1', tx);
 
     expect(port.estornar).toHaveBeenCalledWith(
       VARIACAO_ID,
@@ -261,14 +288,15 @@ describe('EstoqueGatewayAdapter', () => {
       'venda-1',
       'operador-1',
       MotivoMovimentacaoEstoque.VENDA_PDV,
+      tx,
     );
   });
 
-  test('validarSaldoDisponivel fails when available balance is below quantity', async () => {
+  test('validarSaldoDisponivel fails when current balance is below quantity', async () => {
     const repo = {
       findSaldoByVariacaoId: jest.fn().mockResolvedValue({
         isFailure: false,
-        instance: { saldoAtual: 1, quantidadeReservada: 0 },
+        instance: { saldoAtual: 1 },
       }),
     };
     const adapter = new EstoqueGatewayAdapter({} as any, repo as any);
@@ -285,10 +313,10 @@ describe('CaixaGatewayAdapter', () => {
     const port = {
       caixaAbertoDoOperador: jest.fn().mockResolvedValue({
         isFailure: false,
-        instance: { id: SESSAO_ID, status: 'ABERTO' },
+        instance: { id: SESSAO_ID, status: 'ABERTA' },
       }),
     };
-    const adapter = new CaixaGatewayAdapter(port as any, {} as any);
+    const adapter = new CaixaGatewayAdapter(port as any);
 
     const result = await adapter.caixaAbertoDoOperador(USUARIO_ID);
 
@@ -296,29 +324,40 @@ describe('CaixaGatewayAdapter', () => {
     expect(result.instance).toEqual({ sessaoCaixaId: SESSAO_ID, aberta: true });
   });
 
-  test('registrarVenda delegates to the caixa port', async () => {
+  test('registrarVenda delegates to the caixa port, threading tx (RN09)', async () => {
     const port = {
       registrarVenda: jest.fn().mockResolvedValue({ isFailure: false }),
     };
-    const adapter = new CaixaGatewayAdapter(port as any, {} as any);
+    const adapter = new CaixaGatewayAdapter(port as any);
 
-    await adapter.registrarVenda(SESSAO_ID, 2500);
+    const tx = {} as any;
+    await adapter.registrarVenda(SESSAO_ID, 2500, tx);
 
-    expect(port.registrarVenda).toHaveBeenCalledWith(SESSAO_ID, 2500);
+    expect(port.registrarVenda).toHaveBeenCalledWith(SESSAO_ID, 2500, tx);
   });
 
-  test('isSessaoAberta reflects the session aberta flag', async () => {
-    const repo = {
-      findSessaoById: jest.fn().mockResolvedValue({
-        isFailure: false,
-        instance: { aberta: false },
-      }),
+  test('estornarVenda delegates to the caixa port, threading tx', async () => {
+    const port = {
+      estornarVenda: jest.fn().mockResolvedValue({ isFailure: false }),
     };
-    const adapter = new CaixaGatewayAdapter({} as any, repo as any);
+    const adapter = new CaixaGatewayAdapter(port as any);
+
+    const tx = {} as any;
+    await adapter.estornarVenda(SESSAO_ID, 2500, tx);
+
+    expect(port.estornarVenda).toHaveBeenCalledWith(SESSAO_ID, 2500, tx);
+  });
+
+  test('isSessaoAberta reflects the session aberta flag via the port', async () => {
+    const port = {
+      isSessaoAberta: jest.fn().mockResolvedValue(Result.ok(false)),
+    };
+    const adapter = new CaixaGatewayAdapter(port as any);
 
     const result = await adapter.isSessaoAberta(SESSAO_ID);
 
     expect(result.isOk).toBe(true);
     expect(result.instance).toBe(false);
+    expect(port.isSessaoAberta).toHaveBeenCalledWith(SESSAO_ID);
   });
 });

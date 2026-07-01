@@ -8,7 +8,11 @@ import {
 import { ProductError } from '../errors'
 import { Product } from '../model'
 import { ProductsRepository } from '../provider'
-import { UniqueBarcodeSpecification, UniqueSkuSpecification } from '../service'
+import {
+  ActiveCategorySpecification,
+  UniqueBarcodeSpecification,
+  UniqueSkuSpecification,
+} from '../service'
 
 /// Creates a product with at least one variation. Category existence, the
 /// ≥1-variation invariant, price > 0 and SKU/barcode uniqueness are all
@@ -21,8 +25,10 @@ export class CreateProduct implements UseCase<CreateProductInputDTO, ProductDTO>
 
   async execute(input: CreateProductInputDTO): Promise<Result<ProductDTO>> {
     if (input.categoryId) {
-      const category = await this.categoriesRepository.findById(input.categoryId)
-      if (category.isFailure) return Result.fail(ProductError.CATEGORY_NOT_FOUND_FOR_PRODUCT)
+      const found = await this.categoriesRepository.findById(input.categoryId)
+      const category = found.isFailure ? null : found.instance
+      const usable = ActiveCategorySpecification.ensureUsable(category)
+      if (usable.isFailure) return usable.withFail
     }
 
     const product = Product.tryCreate({

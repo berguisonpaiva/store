@@ -41,8 +41,6 @@
   "inventoryRefresh": "Refresh",
 
   "inventoryCurrentBalance": "Current balance",
-  "inventoryAvailableBalance": "Available",
-  "inventoryReserved": "Reserved",
   "inventoryMinimum": "Minimum",
   "inventoryBelowMinimumBadge": "Below minimum",
 
@@ -236,5 +234,19 @@
   "vendasErrorInsufficientStock": "Insufficient stock for one of the items.",
   "vendasErrorPaymentMismatch": "Payments do not match the sale total.",
   "vendasErrorInvalidInput": "Invalid value.",
-  "vendasErrorNetwork": "Network error. Please try again."
+  "vendasErrorNetwork": "Network error. Please try again.",
+  "vendasHistoryTitle": "My sales",
+  "vendasHistoryEmpty": "No sales found.",
+  "vendasHistoryFilterAll": "All",
+  "vendasHistoryNumber": "Sale #{numero}",
+  "@vendasHistoryNumber": {
+    "placeholders": { "numero": { "type": "int" } }
+  },
+  "vendasHistoryItemsCount": "{count, plural, =0{No items} =1{1 item} other{{count} items}}",
+  "@vendasHistoryItemsCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "vendasHistoryDetailTitle": "Sale detail",
+  "vendasHistoryItemsSection": "Items",
+  "vendasHistoryPaymentsSection": "Payments"
 }

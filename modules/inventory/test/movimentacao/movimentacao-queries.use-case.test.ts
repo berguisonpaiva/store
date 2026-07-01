@@ -14,7 +14,7 @@ import { InMemoryEstoqueQuery } from '../mock/in-memory-estoque.query'
 import { InMemoryEstoqueRepository } from '../mock/in-memory-estoque.repository'
 
 describe('ConsultarSaldo', () => {
-  test('returns current and available balance for an existing variation', async () => {
+  test('returns current balance and minimum for an existing variation', async () => {
     const repository = new InMemoryEstoqueRepository()
     const catalogReader = new InMemoryCatalogVariationReader()
     const variation = buildCatalogVariation({ minStock: 2 })
@@ -22,7 +22,6 @@ describe('ConsultarSaldo', () => {
     repository.seedSaldo(
       EstoqueSaldo.createFromCatalogVariation(variation, {
         saldoAtual: 9,
-        quantidadeReservada: 4,
       }),
     )
     const query = new InMemoryEstoqueQuery(repository, catalogReader)
@@ -32,7 +31,7 @@ describe('ConsultarSaldo', () => {
 
     expect(result.isOk).toBe(true)
     expect(result.instance.saldoAtual).toBe(9)
-    expect(result.instance.saldoDisponivel).toBe(5)
+    expect(result.instance.estoqueMinimo).toBe(2)
   })
 
   test('returns VARIACAO_NAO_ENCONTRADA for an unknown variation', async () => {

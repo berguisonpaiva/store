@@ -12,13 +12,6 @@ describe('EstoquePolicyService', () => {
     expect(result.errors).toContain(EstoqueError.ESTOQUE_INSUFICIENTE)
   })
 
-  test('rejects a sale exit when available balance is insufficient', () => {
-    const result = EstoquePolicyService.assertSaldoDisponivel(5, 4, 2)
-
-    expect(result.isFailure).toBe(true)
-    expect(result.errors).toContain(EstoqueError.ESTOQUE_INSUFICIENTE)
-  })
-
   test('computes adjustment delta and direction from an absolute target balance', () => {
     const result = EstoquePolicyService.calculateAdjustment(3, 8)
 

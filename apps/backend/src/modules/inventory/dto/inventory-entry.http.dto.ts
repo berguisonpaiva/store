@@ -12,11 +12,13 @@ export class InventoryEntryHttpDto {
   @IsPositive()
   quantidade!: number;
 
-  @ApiProperty({ enum: [
-    MotivoMovimentacaoEstoque.COMPRA,
-    MotivoMovimentacaoEstoque.DEVOLUCAO,
-    MotivoMovimentacaoEstoque.AJUSTE,
-  ] })
+  @ApiProperty({
+    enum: [
+      MotivoMovimentacaoEstoque.COMPRA,
+      MotivoMovimentacaoEstoque.DEVOLUCAO,
+      MotivoMovimentacaoEstoque.AJUSTE,
+    ],
+  })
   @IsEnum([
     MotivoMovimentacaoEstoque.COMPRA,
     MotivoMovimentacaoEstoque.DEVOLUCAO,

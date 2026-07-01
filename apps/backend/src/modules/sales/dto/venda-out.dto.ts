@@ -36,7 +36,10 @@ export class VendaOutDTO {
   @ApiProperty({ format: 'uuid' })
   id!: string;
 
-  @ApiProperty({ nullable: true, description: 'Sequential receipt number (null until finalized)' })
+  @ApiProperty({
+    nullable: true,
+    description: 'Sequential receipt number (null until finalized)',
+  })
   numero!: number | null;
 
   @ApiProperty({ enum: CanalVenda })
@@ -104,7 +107,8 @@ export class ResumoVendasOutDTO {
 
   @ApiProperty({
     type: [PagamentoPorFormaOutDTO],
-    description: 'Total sold per payment method — all four methods, zero when unused (RF30)',
+    description:
+      'Total sold per payment method — all four methods, zero when unused (RF30)',
   })
   porFormaPagamento!: PagamentoPorFormaOutDTO[];
 }

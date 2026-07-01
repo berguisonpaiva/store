@@ -38,8 +38,6 @@ export type ListarAbaixoDoMinimoInputDTO = Record<string, never>
 export type SaldoEstoqueDTO = {
   variacaoId: string
   saldoAtual: number
-  quantidadeReservada: number
-  saldoDisponivel: number
   estoqueMinimo: number
 }
 
@@ -58,8 +56,6 @@ export type MovimentacaoEstoqueDTO = {
 export type ItemAbaixoDoMinimoDTO = {
   variacaoId: string
   saldoAtual: number
-  quantidadeReservada: number
-  saldoDisponivel: number
   estoqueMinimo: number
 }
 
@@ -67,8 +63,6 @@ export function toSaldoEstoqueDTO(saldo: EstoqueSaldo): SaldoEstoqueDTO {
   return {
     variacaoId: saldo.variacaoId,
     saldoAtual: saldo.saldoAtual,
-    quantidadeReservada: saldo.quantidadeReservada,
-    saldoDisponivel: saldo.saldoDisponivel,
     estoqueMinimo: saldo.estoqueMinimo,
   }
 }

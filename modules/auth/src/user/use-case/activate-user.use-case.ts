@@ -4,7 +4,7 @@ import { UserError } from '../errors'
 import { UserRepository } from '../provider'
 import { RoleAuthorizationPolicy } from '../service'
 
-/// Activates a user (MASTER/ADMIN only).
+/// Activates a user (ADMIN only).
 export class ActivateUser implements UseCase<SetUserActiveInputDTO, UserDTO> {
   constructor(private readonly userRepository: UserRepository) {}
 

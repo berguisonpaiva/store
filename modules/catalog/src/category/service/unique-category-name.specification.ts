@@ -8,7 +8,7 @@ import { Category } from '../model'
 export class UniqueCategoryNameSpecification {
   static ensureUnique(existing: Category | null, selfId?: string): Result<void> {
     if (existing && existing.id !== selfId) {
-      return Result.fail(CategoryError.CATEGORY_NAME_ALREADY_IN_USE)
+      return Result.fail(CategoryError.CATEGORY_ALREADY_EXISTS)
     }
     return Result.ok()
   }

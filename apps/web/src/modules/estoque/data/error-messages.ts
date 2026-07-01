@@ -9,7 +9,7 @@ export function messageForCode(code: string): string {
     case QUANTITY_FIELD_CODE:
       return 'Informe uma quantidade valida maior que zero.';
     case INSUFFICIENT_STOCK_CODE:
-      return 'A quantidade informada excede o saldo disponivel.';
+      return 'A quantidade informada excede o saldo atual.';
     case 'OPERATION_NOT_ALLOWED_FOR_ROLE':
       return 'Seu perfil nao tem permissao para esta operacao.';
     case 'NETWORK_ERROR':

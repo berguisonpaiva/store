@@ -98,8 +98,12 @@ export class VendasPrismaQuery implements VendasQuery {
 
     return Result.ok({
       quantidade: aggregate._count._all,
-      subtotal: decimalToCents(aggregate._sum.subtotal ?? new Prisma.Decimal(0)),
-      desconto: decimalToCents(aggregate._sum.desconto ?? new Prisma.Decimal(0)),
+      subtotal: decimalToCents(
+        aggregate._sum.subtotal ?? new Prisma.Decimal(0),
+      ),
+      desconto: decimalToCents(
+        aggregate._sum.desconto ?? new Prisma.Decimal(0),
+      ),
       total: decimalToCents(aggregate._sum.total ?? new Prisma.Decimal(0)),
       porFormaPagamento,
     });

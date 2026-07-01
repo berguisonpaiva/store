@@ -6,20 +6,22 @@ import {
   TipoDesconto,
   VendaError,
 } from '../../src/venda'
+import { FakeEstoqueGateway } from '../mock/fake-estoque.gateway'
 import { InMemoryVendasRepository } from '../mock/in-memory-vendas.repository'
 import { buildVenda, VARIACAO_A, VARIACAO_B } from '../mock/venda.builder'
 
 function setup() {
   const repository = new InMemoryVendasRepository()
-  return { repository }
+  const estoque = new FakeEstoqueGateway()
+  return { repository, estoque }
 }
 
 describe('AdicionarItem', () => {
   test('adds an item with a price snapshot and recomputes totals', async () => {
-    const { repository } = setup()
+    const { repository, estoque } = setup()
     const venda = buildVenda({ itens: [] })
     repository.seed(venda)
-    const useCase = new AdicionarItem(repository)
+    const useCase = new AdicionarItem(repository, estoque)
 
     const result = await useCase.execute({
       vendaId: venda.id,
@@ -36,10 +38,10 @@ describe('AdicionarItem', () => {
   })
 
   test('rejects a non-positive quantity', async () => {
-    const { repository } = setup()
+    const { repository, estoque } = setup()
     const venda = buildVenda({ itens: [] })
     repository.seed(venda)
-    const useCase = new AdicionarItem(repository)
+    const useCase = new AdicionarItem(repository, estoque)
 
     const result = await useCase.execute({
       vendaId: venda.id,
@@ -53,8 +55,8 @@ describe('AdicionarItem', () => {
   })
 
   test('SALE_NOT_FOUND for an unknown sale', async () => {
-    const { repository } = setup()
-    const useCase = new AdicionarItem(repository)
+    const { repository, estoque } = setup()
+    const useCase = new AdicionarItem(repository, estoque)
 
     const result = await useCase.execute({
       vendaId: '99999999-9999-9999-9999-999999999999',
@@ -68,13 +70,13 @@ describe('AdicionarItem', () => {
   })
 
   test('SALE_ALREADY_FINALIZED when the sale is CONCLUIDA', async () => {
-    const { repository } = setup()
+    const { repository, estoque } = setup()
     const venda = buildVenda({
       status: StatusVenda.CONCLUIDA,
       itens: [{ variacaoId: VARIACAO_A, quantidade: 1, precoUnitario: 1000 }],
     })
     repository.seed(venda)
-    const useCase = new AdicionarItem(repository)
+    const useCase = new AdicionarItem(repository, estoque)
 
     const result = await useCase.execute({
       vendaId: venda.id,
@@ -85,6 +87,67 @@ describe('AdicionarItem', () => {
 
     expect(result.isFailure).toBe(true)
     expect(result.errors).toContain(VendaError.SALE_ALREADY_FINALIZED)
+  })
+})
+
+describe('AdicionarItem — stock pre-check (RN09)', () => {
+  test('adds the item when the quantity is within available stock', async () => {
+    const { repository, estoque } = setup()
+    const venda = buildVenda({ itens: [] })
+    repository.seed(venda)
+    estoque.comSaldo(VARIACAO_A, 5)
+    const useCase = new AdicionarItem(repository, estoque)
+
+    const result = await useCase.execute({
+      vendaId: venda.id,
+      variacaoId: VARIACAO_A,
+      quantidade: 3,
+      precoUnitario: 1000,
+    })
+
+    expect(result.isOk).toBe(true)
+    expect(result.instance.itens).toHaveLength(1)
+    expect(repository.get(venda.id)!.itens).toHaveLength(1)
+  })
+
+  test('rejects with INSUFFICIENT_STOCK and does not add the item', async () => {
+    const { repository, estoque } = setup()
+    const venda = buildVenda({ itens: [] })
+    repository.seed(venda)
+    estoque.comSaldo(VARIACAO_A, 2)
+    const useCase = new AdicionarItem(repository, estoque)
+
+    const result = await useCase.execute({
+      vendaId: venda.id,
+      variacaoId: VARIACAO_A,
+      quantidade: 3,
+      precoUnitario: 1000,
+    })
+
+    expect(result.isFailure).toBe(true)
+    expect(result.errors).toContain(VendaError.INSUFFICIENT_STOCK)
+    expect(repository.get(venda.id)!.itens).toHaveLength(0)
+  })
+
+  test('validates the EFFECTIVE resulting quantity for the variation (existing line + delta)', async () => {
+    const { repository, estoque } = setup()
+    // The sale already has 2 units of VARIACAO_A; only 3 are available.
+    const venda = buildVenda({ itens: [{ variacaoId: VARIACAO_A, quantidade: 2, precoUnitario: 1000 }] })
+    repository.seed(venda)
+    estoque.comSaldo(VARIACAO_A, 3)
+    const useCase = new AdicionarItem(repository, estoque)
+
+    // Adding 2 more would make 4 > 3 available → rejected.
+    const result = await useCase.execute({
+      vendaId: venda.id,
+      variacaoId: VARIACAO_A,
+      quantidade: 2,
+      precoUnitario: 1000,
+    })
+
+    expect(result.isFailure).toBe(true)
+    expect(result.errors).toContain(VendaError.INSUFFICIENT_STOCK)
+    expect(repository.get(venda.id)!.itens).toHaveLength(1)
   })
 })
 

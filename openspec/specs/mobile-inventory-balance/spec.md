@@ -5,12 +5,12 @@ TBD - created by archiving change estoque-mobile. Update Purpose after archive.
 ## Requirements
 ### Requirement: Inventory contract in domain
 
-The system SHALL define an inventory contract in `lib/domain/estoque/` — entities (`StockBalanceEntity` with `saldoAtual`, `saldoDisponivel`, `quantidadeReservada`, `estoqueMinimo`; `StockMovementEntity` with `tipo`, `motivo`, `quantidade`, `saldoResultante`, timestamp; `LowStockItemEntity`), an `InventoryRepository` interface (consultar saldo by SKU, consultar saldo by barcode, listar movimentações por variação/período, listar abaixo do mínimo), and `InventoryFailure`s — free of Flutter and infrastructure, returning fpdart `Either<Failure, T>`.
+The system SHALL define an inventory contract in `lib/domain/estoque/` — entities (`StockBalanceEntity` with `saldoAtual` and `estoqueMinimo`; `StockMovementEntity` with `tipo`, `motivo`, `quantidade`, `saldoResultante`, timestamp; `LowStockItemEntity`), an `InventoryRepository` interface (consultar saldo by SKU, consultar saldo by barcode, listar movimentações por variação/período, listar abaixo do mínimo), and `InventoryFailure`s — free of Flutter and infrastructure, returning fpdart `Either<Failure, T>`. `StockBalanceEntity` MUST NOT carry `quantidadeReservada`/`saldoDisponivel`.
 
 #### Scenario: Domain contract present
 
 - **WHEN** `lib/domain/estoque/` is inspected
-- **THEN** the entities, repository interface, and failures exist with no imports of Flutter, `data`, or `core`
+- **THEN** the entities, repository interface, and failures exist with no imports of Flutter, `data`, or `core`, and `StockBalanceEntity` exposes `saldoAtual` and `estoqueMinimo` only
 
 #### Scenario: Either-based results
 
@@ -33,12 +33,12 @@ The system SHALL implement the read side of the contract in `lib/data/estoque/` 
 
 ### Requirement: Consultar saldo by SKU or barcode
 
-The system SHALL provide a saldo-lookup screen (MVVM Cubit, explicit-bloc, no `BlocProvider`) that resolves a variation by a typed/scanned SKU or barcode and shows its `saldoAtual` and `saldoDisponivel` (`saldoAtual − quantidadeReservada`), with an `AppToast` when the code matches nothing.
+The system SHALL provide a saldo-lookup screen (MVVM Cubit, explicit-bloc, no `BlocProvider`) that resolves a variation by a typed/scanned SKU or barcode and shows its `saldoAtual` (and `estoqueMinimo`), with an `AppToast` when the code matches nothing. No reservation/available value is shown.
 
-#### Scenario: Lookup shows current and available balance
+#### Scenario: Lookup shows current balance
 
 - **WHEN** a known SKU or barcode is entered/scanned
-- **THEN** the variation's `saldoAtual` and `saldoDisponivel` are shown (RF-EST-06)
+- **THEN** the variation's `saldoAtual` (and `estoqueMinimo`) is shown (RF-EST-06)
 
 #### Scenario: Lookup not found
 

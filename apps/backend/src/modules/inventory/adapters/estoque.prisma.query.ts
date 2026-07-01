@@ -15,7 +15,9 @@ import { PrismaService } from '../../../db/prisma.service';
 export class EstoquePrismaQuery implements EstoqueQuery {
   constructor(private readonly prisma: PrismaService) {}
 
-  async consultarSaldo(variacaoId: string): Promise<Result<SaldoEstoqueDTO | null>> {
+  async consultarSaldo(
+    variacaoId: string,
+  ): Promise<Result<SaldoEstoqueDTO | null>> {
     const row = await this.prisma.client.estoqueSaldo.findUnique({
       where: { variacaoId },
     });
@@ -27,8 +29,6 @@ export class EstoquePrismaQuery implements EstoqueQuery {
     return Result.ok({
       variacaoId: row.variacaoId,
       saldoAtual: row.saldoAtual,
-      quantidadeReservada: row.quantidadeReservada,
-      saldoDisponivel: row.saldoAtual - row.quantidadeReservada,
       estoqueMinimo: row.estoqueMinimo,
     });
   }
@@ -93,8 +93,6 @@ export class EstoquePrismaQuery implements EstoqueQuery {
       rows.map((row) => ({
         variacaoId: row.variacaoId,
         saldoAtual: row.saldoAtual,
-        quantidadeReservada: row.quantidadeReservada,
-        saldoDisponivel: row.saldoAtual - row.quantidadeReservada,
         estoqueMinimo: row.estoqueMinimo,
       })),
     );

@@ -67,8 +67,10 @@ export class VendasCommandsController {
 
   @Post()
   @HttpCode(201)
-  @Papeis(UserRole.MASTER, UserRole.ADMIN, UserRole.OPERADOR)
-  @ApiOperation({ summary: 'Open a sale bound to the operator open cash session' })
+  @Papeis(UserRole.ADMIN, UserRole.OPERADOR)
+  @ApiOperation({
+    summary: 'Open a sale bound to the operator open cash session',
+  })
   @ApiCreatedResponse({ description: 'Sale opened', type: VendaOutDTO })
   @ApiUnprocessableEntityResponse({ description: 'NO_OPEN_CASH_SESSION' })
   async criar(
@@ -81,8 +83,10 @@ export class VendasCommandsController {
 
   @Post(':id/itens')
   @HttpCode(201)
-  @Papeis(UserRole.MASTER, UserRole.ADMIN, UserRole.OPERADOR)
-  @ApiOperation({ summary: 'Add an item resolved by variacaoId, sku, or codigoBarras' })
+  @Papeis(UserRole.ADMIN, UserRole.OPERADOR)
+  @ApiOperation({
+    summary: 'Add an item resolved by variacaoId, sku, or codigoBarras',
+  })
   @ApiCreatedResponse({ description: 'Item added', type: VendaOutDTO })
   @ApiNotFoundResponse({ description: 'SALE_NOT_FOUND or VARIATION_NOT_FOUND' })
   @ApiConflictResponse({ description: 'SALE_ALREADY_FINALIZED' })
@@ -116,7 +120,7 @@ export class VendasCommandsController {
 
   @Delete(':id/itens/:itemId')
   @HttpCode(200)
-  @Papeis(UserRole.MASTER, UserRole.ADMIN, UserRole.OPERADOR)
+  @Papeis(UserRole.ADMIN, UserRole.OPERADOR)
   @ApiOperation({ summary: 'Remove an item from an open sale' })
   @ApiOkResponse({ description: 'Item removed', type: VendaOutDTO })
   @ApiNotFoundResponse({ description: 'SALE_NOT_FOUND or ITEM_NOT_FOUND' })
@@ -125,16 +129,16 @@ export class VendasCommandsController {
     @Param('id', ParseUUIDPipe) vendaId: string,
     @Param('itemId', ParseUUIDPipe) itemId: string,
   ): Promise<VendaOutDTO> {
-    const venda = unwrap(
-      await this.removerItem.execute({ vendaId, itemId }),
-    );
+    const venda = unwrap(await this.removerItem.execute({ vendaId, itemId }));
     return toVendaOut(venda);
   }
 
   @Patch(':id/desconto')
   @HttpCode(200)
-  @Papeis(UserRole.MASTER, UserRole.ADMIN, UserRole.OPERADOR)
-  @ApiOperation({ summary: 'Apply a discount (valor in reais or percentual 0..100)' })
+  @Papeis(UserRole.ADMIN, UserRole.OPERADOR)
+  @ApiOperation({
+    summary: 'Apply a discount (valor in reais or percentual 0..100)',
+  })
   @ApiOkResponse({ description: 'Discount applied', type: VendaOutDTO })
   @ApiNotFoundResponse({ description: 'SALE_NOT_FOUND' })
   @ApiConflictResponse({ description: 'SALE_ALREADY_FINALIZED' })
@@ -159,12 +163,19 @@ export class VendasCommandsController {
 
   @Post(':id/finalizar')
   @HttpCode(200)
-  @Papeis(UserRole.MASTER, UserRole.ADMIN, UserRole.OPERADOR)
-  @ApiOperation({ summary: 'Finalize a sale (stock + payments + cash) in one transaction' })
-  @ApiOkResponse({ description: 'Sale finalized (CONCLUIDA)', type: VendaOutDTO })
+  @Papeis(UserRole.ADMIN, UserRole.OPERADOR)
+  @ApiOperation({
+    summary: 'Finalize a sale (stock + payments + cash) in one transaction',
+  })
+  @ApiOkResponse({
+    description: 'Sale finalized (CONCLUIDA)',
+    type: VendaOutDTO,
+  })
   @ApiNotFoundResponse({ description: 'SALE_NOT_FOUND' })
   @ApiConflictResponse({ description: 'SALE_ALREADY_FINALIZED' })
-  @ApiUnprocessableEntityResponse({ description: 'INSUFFICIENT_STOCK or PAYMENT_MISMATCH' })
+  @ApiUnprocessableEntityResponse({
+    description: 'INSUFFICIENT_STOCK or PAYMENT_MISMATCH',
+  })
   async finalizar(
     @Param('id', ParseUUIDPipe) vendaId: string,
     @Body() dto: FinalizarVendaInDTO,
@@ -183,9 +194,15 @@ export class VendasCommandsController {
 
   @Post(':id/cancelar')
   @HttpCode(200)
-  @Papeis(UserRole.MASTER, UserRole.ADMIN, UserRole.OPERADOR)
-  @ApiOperation({ summary: 'Cancel a sale, reversing stock and cash while the session is open' })
-  @ApiOkResponse({ description: 'Sale cancelled (CANCELADA)', type: VendaOutDTO })
+  @Papeis(UserRole.ADMIN, UserRole.OPERADOR)
+  @ApiOperation({
+    summary:
+      'Cancel a sale, reversing stock and cash while the session is open',
+  })
+  @ApiOkResponse({
+    description: 'Sale cancelled (CANCELADA)',
+    type: VendaOutDTO,
+  })
   @ApiNotFoundResponse({ description: 'SALE_NOT_FOUND' })
   @ApiUnprocessableEntityResponse({ description: 'CASH_SESSION_CLOSED' })
   async cancelar(

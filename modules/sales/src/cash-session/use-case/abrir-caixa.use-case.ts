@@ -4,7 +4,7 @@ import { CaixaError } from '../errors'
 import { SessaoCaixa } from '../model'
 import { CaixaRepository } from '../provider'
 
-/// Opens a new `ABERTO` session for the operator. At most one open session per
+/// Opens a new `ABERTA` session for the operator. At most one open session per
 /// operator at any time (RF-CX-01/RF-CX-02).
 export class AbrirCaixa implements UseCase<AbrirCaixaInputDTO, SessaoCaixa> {
   constructor(private readonly repository: CaixaRepository) {}
@@ -15,7 +15,7 @@ export class AbrirCaixa implements UseCase<AbrirCaixaInputDTO, SessaoCaixa> {
       return existing.withFail
     }
     if (existing.instance) {
-      return Result.fail(CaixaError.CASH_SESSION_ALREADY_OPEN)
+      return Result.fail(CaixaError.CAIXA_JA_ABERTO)
     }
 
     const sessao = SessaoCaixa.abrir({

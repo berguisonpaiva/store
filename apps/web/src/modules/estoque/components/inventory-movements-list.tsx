@@ -50,7 +50,7 @@ type InventoryMovementsListProps = {
   variationMissing?: boolean;
   /** Precomputed balances per variation, used by the Saldo and Saída dialogs. */
   balancesByVariationId: Record<string, InventoryBalanceDTO | undefined>;
-  /** Whether the session may register adjustments (MASTER/ADMIN). */
+  /** Whether the session may register adjustments (ADMIN). */
   canAdjust?: boolean;
 };
 
@@ -205,7 +205,7 @@ export function InventoryMovementsList({
           <DialogHeader>
             <DialogTitle>Saida manual</DialogTitle>
             <DialogDescription>
-              Lancamento de perdas ou baixas manuais com validacao de saldo disponivel.
+              Lancamento de perdas ou baixas manuais com validacao de saldo atual.
             </DialogDescription>
           </DialogHeader>
           <InventoryExitForm

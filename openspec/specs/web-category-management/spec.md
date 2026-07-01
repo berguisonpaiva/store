@@ -14,7 +14,7 @@ The system SHALL provide a `/categories` route (private) listing categories and 
 
 #### Scenario: Duplicate name surfaced
 
-- **WHEN** the backend returns 409 (`CATEGORY_NAME_ALREADY_IN_USE`)
+- **WHEN** the backend returns 409 (`CATEGORY_ALREADY_EXISTS`)
 - **THEN** a field-level error is shown on the name input
 
 ### Requirement: Activate and deactivate categories (no delete)
@@ -28,10 +28,24 @@ The system SHALL allow activating/deactivating categories from the UI and SHALL 
 
 ### Requirement: Navigation registration
 
-The system SHALL register “Produtos” and “Categorias” entries in the `(private)` shell navigation.
+The system SHALL register a “Catálogo” grouping with “Produtos” (`/products`) and “Categorias” (`/categories`) entries in the `(private)` shell navigation, gated to the ADMIN role so the entries appear only for ADMIN sessions (RN07, reinforcement only).
 
-#### Scenario: Menu shows catalog entries
+#### Scenario: ADMIN sees catalog entries
 
-- **WHEN** an authenticated user views the private shell
+- **WHEN** an authenticated ADMIN views the private shell
 - **THEN** the sidebar shows “Produtos” (`/products`) and “Categorias” (`/categories`)
+
+#### Scenario: Non-ADMIN does not see catalog entries
+
+- **WHEN** an authenticated OPERADOR views the private shell
+- **THEN** the sidebar does not render the “Produtos”/“Categorias” entries
+
+### Requirement: ADMIN-only category route guard
+
+The system SHALL verify the session role on load of the `/categories` route and redirect a non-ADMIN session to `/dashboard` before rendering the category management UI (RN07).
+
+#### Scenario: Non-ADMIN redirected
+
+- **WHEN** an authenticated OPERADOR navigates directly to `/categories`
+- **THEN** they are redirected to `/dashboard` and no category management UI is shown
 

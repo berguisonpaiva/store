@@ -115,12 +115,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inventoryCurrentBalance => 'Current balance';
 
   @override
-  String get inventoryAvailableBalance => 'Available';
-
-  @override
-  String get inventoryReserved => 'Reserved';
-
-  @override
   String get inventoryMinimum => 'Minimum';
 
   @override
@@ -626,4 +620,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get vendasErrorNetwork => 'Network error. Please try again.';
+
+  @override
+  String get vendasHistoryTitle => 'My sales';
+
+  @override
+  String get vendasHistoryEmpty => 'No sales found.';
+
+  @override
+  String get vendasHistoryFilterAll => 'All';
+
+  @override
+  String vendasHistoryNumber(int numero) {
+    return 'Sale #$numero';
+  }
+
+  @override
+  String vendasHistoryItemsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+      zero: 'No items',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get vendasHistoryDetailTitle => 'Sale detail';
+
+  @override
+  String get vendasHistoryItemsSection => 'Items';
+
+  @override
+  String get vendasHistoryPaymentsSection => 'Payments';
 }

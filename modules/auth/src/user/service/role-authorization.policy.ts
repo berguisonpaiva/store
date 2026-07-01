@@ -2,10 +2,11 @@ import { Result } from '@repo/shared'
 import { UserError } from '../errors'
 import { UserRole } from '../model/user-role'
 
-/// Pure policy: only MASTER/ADMIN may create users or change roles. No I/O.
+/// Pure policy: only ADMIN may manage users (create/edit/activate/deactivate).
+/// No I/O.
 export class RoleAuthorizationPolicy {
   static canManageUsers(actorRole: UserRole): boolean {
-    return actorRole === UserRole.MASTER || actorRole === UserRole.ADMIN
+    return actorRole === UserRole.ADMIN
   }
 
   static ensureCanManageUsers(actorRole: UserRole): Result<void> {

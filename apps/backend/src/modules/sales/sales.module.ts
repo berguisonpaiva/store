@@ -60,8 +60,9 @@ const CAIXA_GATEWAY = 'VENDAS_CAIXA_GATEWAY';
     },
     {
       provide: AdicionarItem,
-      useFactory: (repo: VendasRepository) => new AdicionarItem(repo),
-      inject: [VendasPrismaRepository],
+      useFactory: (repo: VendasRepository, estoque: EstoqueGateway) =>
+        new AdicionarItem(repo, estoque),
+      inject: [VendasPrismaRepository, ESTOQUE_GATEWAY],
     },
     {
       provide: RemoverItem,
@@ -81,7 +82,12 @@ const CAIXA_GATEWAY = 'VENDAS_CAIXA_GATEWAY';
         caixa: CaixaGateway,
         prisma: PrismaService,
       ) => new FinalizarVenda(repo, estoque, caixa, prisma),
-      inject: [VendasPrismaRepository, ESTOQUE_GATEWAY, CAIXA_GATEWAY, PrismaService],
+      inject: [
+        VendasPrismaRepository,
+        ESTOQUE_GATEWAY,
+        CAIXA_GATEWAY,
+        PrismaService,
+      ],
     },
     {
       provide: CancelarVenda,
@@ -91,7 +97,12 @@ const CAIXA_GATEWAY = 'VENDAS_CAIXA_GATEWAY';
         caixa: CaixaGateway,
         prisma: PrismaService,
       ) => new CancelarVenda(repo, estoque, caixa, prisma),
-      inject: [VendasPrismaRepository, ESTOQUE_GATEWAY, CAIXA_GATEWAY, PrismaService],
+      inject: [
+        VendasPrismaRepository,
+        ESTOQUE_GATEWAY,
+        CAIXA_GATEWAY,
+        PrismaService,
+      ],
     },
     {
       provide: BuscarVenda,

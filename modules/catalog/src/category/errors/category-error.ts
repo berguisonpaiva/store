@@ -2,7 +2,8 @@
 /// `Result.fail(<CODE>)`; the API layer maps them to HTTP responses.
 export const CategoryError = {
   CATEGORY_NOT_FOUND: 'CATEGORY_NOT_FOUND',
-  CATEGORY_NAME_ALREADY_IN_USE: 'CATEGORY_NAME_ALREADY_IN_USE',
+  CATEGORY_ALREADY_EXISTS: 'CATEGORY_ALREADY_EXISTS',
+  CATEGORY_INACTIVE: 'CATEGORY_INACTIVE',
 } as const
 
 export type CategoryErrorCode = (typeof CategoryError)[keyof typeof CategoryError]

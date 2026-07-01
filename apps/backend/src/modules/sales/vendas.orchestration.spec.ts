@@ -50,6 +50,7 @@ class FakeEstoqueGateway implements EstoqueGateway {
   baixas: Array<{ variacaoId: string; quantidade: number }> = [];
   estornos: Array<{ variacaoId: string; quantidade: number }> = [];
   failDarBaixa = false;
+  lastDarBaixaTx: TransactionContext | undefined;
 
   async validarSaldoDisponivel(): Promise<Result<void>> {
     return Result.ok();
@@ -57,10 +58,14 @@ class FakeEstoqueGateway implements EstoqueGateway {
   async darBaixa(
     variacaoId: string,
     quantidade: number,
+    _origemVendaId?: string,
+    _usuarioId?: string,
+    tx?: TransactionContext,
   ): Promise<Result<void>> {
     if (this.failDarBaixa) {
       return Result.fail(VendaError.INSUFFICIENT_STOCK);
     }
+    this.lastDarBaixaTx = tx;
     this.baixas.push({ variacaoId, quantidade });
     return Result.ok();
   }
@@ -111,21 +116,26 @@ class FakeCaixaGateway implements CaixaGateway {
 /// in-memory; the contract under test is the orchestration order and rollback).
 class FakeTransactionManager implements TransactionManager {
   ran = 0;
+  readonly context: TransactionContext = {};
   async runInTransaction<T>(
     operation: (context: TransactionContext) => Promise<T>,
   ): Promise<T> {
     this.ran += 1;
-    return operation({} as TransactionContext);
+    return operation(this.context);
   }
 }
 
-async function seedOpenSaleWithItem(repo: FakeVendasRepository): Promise<Venda> {
-  const venda = Venda.abrir({ usuarioId: USUARIO_ID, sessaoCaixaId: SESSAO_ID })
-    .instance.adicionarItem({
-      variacaoId: VARIACAO_ID,
-      quantidade: 2,
-      precoUnitario: 1500,
-    }).instance;
+async function seedOpenSaleWithItem(
+  repo: FakeVendasRepository,
+): Promise<Venda> {
+  const venda = Venda.abrir({
+    usuarioId: USUARIO_ID,
+    sessaoCaixaId: SESSAO_ID,
+  }).instance.adicionarItem({
+    variacaoId: VARIACAO_ID,
+    quantidade: 2,
+    precoUnitario: 1500,
+  }).instance;
   await repo.create(venda);
   return venda;
 }
@@ -147,6 +157,9 @@ describe('FinalizarVenda orchestration', () => {
     expect(result.isOk).toBe(true);
     expect(result.instance.status).toBe(StatusVenda.CONCLUIDA);
     expect(tx.ran).toBe(1);
+    // RN06: the sale's transaction context is threaded into the stock take-down,
+    // so the movement joins the sale's single transaction.
+    expect(estoque.lastDarBaixaTx).toBe(tx.context);
     expect(estoque.netStock(VARIACAO_ID)).toBe(2); // stock taken down
     expect(caixa.vendasRegistradas).toEqual([3000]);
     expect(repo.current(venda.id)!.status).toBe(StatusVenda.CONCLUIDA);

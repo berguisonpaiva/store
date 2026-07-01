@@ -102,11 +102,12 @@ class CaixaRepositoryImpl implements CaixaRepository {
   }
 
   CaixaFailure _toFailure(CashSessionException e) {
+    // Codes mirror the backend `CaixaError` (Portuguese, sales-module Decision 2).
     return switch (e.code) {
-      'CASH_SESSION_ALREADY_OPEN' => const CashSessionAlreadyOpenFailure(),
-      'CASH_SESSION_NOT_FOUND' => const CashSessionNotFoundFailure(),
-      'CASH_SESSION_ALREADY_CLOSED' => const CashSessionAlreadyClosedFailure(),
-      'PENDING_SALE_IN_SESSION' => const PendingSaleInSessionFailure(),
+      'CAIXA_JA_ABERTO' => const CashSessionAlreadyOpenFailure(),
+      'CAIXA_NAO_ENCONTRADO' => const CashSessionNotFoundFailure(),
+      'CAIXA_JA_FECHADO' => const CashSessionAlreadyClosedFailure(),
+      'VENDA_PENDENTE_NO_FECHAMENTO' => const PendingSaleInSessionFailure(),
       _ => _fallbackByStatus(e.statusCode),
     };
   }

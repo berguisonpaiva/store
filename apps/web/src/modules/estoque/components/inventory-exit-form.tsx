@@ -64,10 +64,17 @@ export function InventoryExitForm({
   const selectedBalance = variationId ? balancesByVariationId[variationId] : undefined;
 
   useEffect(() => {
-    setValue('saldoDisponivel', selectedBalance?.saldoDisponivel);
-  }, [selectedBalance?.saldoDisponivel, setValue]);
+    setValue('saldoAtual', selectedBalance?.saldoAtual);
+  }, [selectedBalance?.saldoAtual, setValue]);
 
-  const onSubmit = handleSubmit(({ saldoDisponivel: _saldoDisponivel, ...values }) => {
+  const onSubmit = handleSubmit((form) => {
+    // `saldoAtual` is a client-only field powering the "quantidade ≤ saldo" check;
+    // it is not part of the exit command payload.
+    const values = {
+      variacaoId: form.variacaoId,
+      quantidade: form.quantidade,
+      motivo: form.motivo,
+    };
     startTransition(async () => {
       const result = await registerExit(values);
       if (result.ok) {
@@ -95,7 +102,7 @@ export function InventoryExitForm({
       {embedded ? null : (
         <PageSectionHeader
           title="Saida manual"
-          subtitle="Lancamento de perdas ou baixas manuais com validacao de saldo disponivel."
+          subtitle="Lancamento de perdas ou baixas manuais com validacao de saldo atual."
         />
       )}
 
@@ -111,7 +118,7 @@ export function InventoryExitForm({
                   onChange={field.onChange}
                   options={variationOptions}
                   error={errors.variacaoId?.message}
-                  description="Ao selecionar uma variacao, o saldo disponivel e exibido abaixo."
+                  description="Ao selecionar uma variacao, o saldo atual e exibido abaixo."
                 />
               )}
             />
@@ -153,10 +160,10 @@ export function InventoryExitForm({
         <div className="mt-5 rounded-md border border-border/80 bg-muted/25 p-4 text-sm text-muted-foreground">
           {selectedBalance ? (
             <p>
-              Saldo disponivel atual: <span className="font-semibold text-foreground">{selectedBalance.saldoDisponivel}</span>
+              Saldo atual: <span className="font-semibold text-foreground">{selectedBalance.saldoAtual}</span>
             </p>
           ) : (
-            <p>Selecione uma variacao para consultar o saldo disponivel antes de registrar a saida.</p>
+            <p>Selecione uma variacao para consultar o saldo atual antes de registrar a saida.</p>
           )}
         </div>
       </Card>

@@ -16,8 +16,6 @@ class _MockGetBalance extends Mock implements GetBalanceUseCase {}
 const _balance = StockBalanceEntity(
   variacaoId: 'v1',
   saldoAtual: 10,
-  quantidadeReservada: 2,
-  saldoDisponivel: 8,
   estoqueMinimo: 3,
 );
 
@@ -49,7 +47,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(BalanceSummaryCard), findsOneWidget);
-    expect(find.text('8'), findsOneWidget);
+    expect(find.text('10'), findsOneWidget);
   });
 
   testWidgets('shows an error toast when the variation is not found', (

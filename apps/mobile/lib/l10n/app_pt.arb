@@ -38,8 +38,6 @@
   "inventoryRefresh": "Atualizar",
 
   "inventoryCurrentBalance": "Saldo atual",
-  "inventoryAvailableBalance": "Disponível",
-  "inventoryReserved": "Reservado",
   "inventoryMinimum": "Mínimo",
   "inventoryBelowMinimumBadge": "Abaixo do mínimo",
 
@@ -233,5 +231,19 @@
   "vendasErrorInsufficientStock": "Estoque insuficiente para um dos itens.",
   "vendasErrorPaymentMismatch": "Os pagamentos não conferem com o total da venda.",
   "vendasErrorInvalidInput": "Valor inválido.",
-  "vendasErrorNetwork": "Erro de rede. Tente novamente."
+  "vendasErrorNetwork": "Erro de rede. Tente novamente.",
+  "vendasHistoryTitle": "Minhas vendas",
+  "vendasHistoryEmpty": "Nenhuma venda encontrada.",
+  "vendasHistoryFilterAll": "Todas",
+  "vendasHistoryNumber": "Venda #{numero}",
+  "@vendasHistoryNumber": {
+    "placeholders": { "numero": { "type": "int" } }
+  },
+  "vendasHistoryItemsCount": "{count, plural, =0{Nenhum item} =1{1 item} other{{count} itens}}",
+  "@vendasHistoryItemsCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "vendasHistoryDetailTitle": "Detalhe da venda",
+  "vendasHistoryItemsSection": "Itens",
+  "vendasHistoryPaymentsSection": "Pagamentos"
 }

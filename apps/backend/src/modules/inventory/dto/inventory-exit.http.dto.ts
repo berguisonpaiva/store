@@ -13,14 +13,8 @@ export class InventoryExitHttpDto {
   quantidade!: number;
 
   @ApiProperty({
-    enum: [
-      MotivoMovimentacaoEstoque.PERDA,
-      MotivoMovimentacaoEstoque.AJUSTE,
-    ],
+    enum: [MotivoMovimentacaoEstoque.PERDA, MotivoMovimentacaoEstoque.AJUSTE],
   })
-  @IsEnum([
-    MotivoMovimentacaoEstoque.PERDA,
-    MotivoMovimentacaoEstoque.AJUSTE,
-  ])
+  @IsEnum([MotivoMovimentacaoEstoque.PERDA, MotivoMovimentacaoEstoque.AJUSTE])
   motivo!: MotivoMovimentacaoEstoque;
 }

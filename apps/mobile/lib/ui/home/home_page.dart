@@ -79,6 +79,12 @@ class _HomePageState extends State<HomePage> {
                   label: Text(l10n.vendasPdvTitle),
                   onPressed: () => context.push('/vendas'),
                 ),
+                const SizedBox(height: AppSpacing.md),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.receipt_long_outlined),
+                  label: Text(l10n.vendasHistoryTitle),
+                  onPressed: () => context.push('/vendas/historico'),
+                ),
               ],
             );
           },

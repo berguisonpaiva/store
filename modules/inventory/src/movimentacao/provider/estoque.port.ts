@@ -1,4 +1,4 @@
-import { Result } from '@repo/shared'
+import { Result, TransactionContext } from '@repo/shared'
 import { MotivoMovimentacaoEstoque } from '../model'
 
 export interface EstoquePort {
@@ -8,6 +8,7 @@ export interface EstoquePort {
     origemVendaId: string,
     usuarioId: string,
     motivo?: MotivoMovimentacaoEstoque,
+    tx?: TransactionContext,
   ): Promise<Result<void>>
 
   estornar(
@@ -16,5 +17,6 @@ export interface EstoquePort {
     origemVendaId: string,
     usuarioId: string,
     motivo?: MotivoMovimentacaoEstoque,
+    tx?: TransactionContext,
   ): Promise<Result<void>>
 }

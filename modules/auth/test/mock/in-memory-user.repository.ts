@@ -5,7 +5,6 @@ import {
   UserDTO,
   UserQuery,
   UserRepository,
-  UserRole,
   toUserDTO,
 } from '../../src/user'
 
@@ -41,13 +40,6 @@ export class InMemoryUserRepository implements UserRepository, UserQuery {
     const normalized = email.trim().toLowerCase()
     const found = [...this.items.values()].find((u) => u.email === normalized)
     return Result.ok(found ?? null)
-  }
-
-  async countActiveByRole(role: UserRole): Promise<Result<number>> {
-    const count = [...this.items.values()].filter(
-      (u) => u.active && u.role === role,
-    ).length
-    return Result.ok(count)
   }
 
   async list(

@@ -61,7 +61,8 @@ import { InventoryQueriesController } from './inventory-queries.controller';
     },
     {
       provide: ListarAbaixoDoMinimo,
-      useFactory: (query: EstoquePrismaQuery) => new ListarAbaixoDoMinimo(query),
+      useFactory: (query: EstoquePrismaQuery) =>
+        new ListarAbaixoDoMinimo(query),
       inject: [EstoquePrismaQuery],
     },
     {

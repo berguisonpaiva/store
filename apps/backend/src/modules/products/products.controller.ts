@@ -26,7 +26,7 @@ import { CreateProductHttpDto } from './dto/create-product.http.dto';
 import { ListProductsQueryDto } from './dto/list-products.query.dto';
 import { UpdateProductHttpDto } from './dto/update-product.http.dto';
 
-/// Product management endpoints (MASTER/ADMIN). Controllers contain no rules —
+/// Product management endpoints (ADMIN). Controllers contain no rules —
 /// they validate the HTTP shape, delegate to the domain use cases and translate
 /// the `Result` via `unwrap`.
 @ApiTags('products')
@@ -44,7 +44,7 @@ export class ProductsController {
   ) {}
 
   @Post()
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
+  @Papeis(UserRole.ADMIN)
   @ApiOperation({ summary: 'Create a product with at least one variation' })
   async create(@Body() dto: CreateProductHttpDto) {
     return unwrap(
@@ -66,8 +66,10 @@ export class ProductsController {
   }
 
   @Patch(':id')
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Edit a product profile (name/description/category)' })
+  @Papeis(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Edit a product profile (name/description/category)',
+  })
   async update(@Param('id') id: string, @Body() dto: UpdateProductHttpDto) {
     return unwrap(
       await this.updateProduct.execute({
@@ -80,21 +82,21 @@ export class ProductsController {
   }
 
   @Patch(':id/activate')
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
+  @Papeis(UserRole.ADMIN)
   @ApiOperation({ summary: 'Activate a product' })
   async activate(@Param('id') id: string) {
     return unwrap(await this.activateProduct.execute({ id }));
   }
 
   @Patch(':id/deactivate')
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
+  @Papeis(UserRole.ADMIN)
   @ApiOperation({ summary: 'Deactivate a product' })
   async deactivate(@Param('id') id: string) {
     return unwrap(await this.deactivateProduct.execute({ id }));
   }
 
   @Get()
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
+  @Papeis(UserRole.ADMIN)
   @ApiOperation({ summary: 'List products (paginated, name search, filters)' })
   async list(@Query() query: ListProductsQueryDto) {
     return unwrap(
@@ -109,7 +111,7 @@ export class ProductsController {
   }
 
   @Get(':id')
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
+  @Papeis(UserRole.ADMIN)
   @ApiOperation({ summary: 'Fetch a product by id (with its variations)' })
   async findById(@Param('id') id: string) {
     return unwrap(await this.findProductById.execute({ id }));

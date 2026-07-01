@@ -134,13 +134,21 @@ class VendasRemoteDataSourceImpl implements VendasRemoteDataSource {
     }
   }
 
-  /// Best-effort extraction of the backend `code` from a Dio error body such as
-  /// `{ "code": "PAYMENT_MISMATCH", ... }`.
+  /// Best-effort extraction of the stable backend error code from a Dio error
+  /// body. The API's global exception filter shapes failures as
+  /// `{ statusCode, error, message: ["PAYMENT_MISMATCH"], path, timestamp }`, so
+  /// the domain code lives in `message[0]`. Falls back to legacy `code`/`error`
+  /// keys for robustness.
   String? _extractCode(Object? cause) {
     if (cause is DioException) {
       final body = cause.response?.data;
       if (body is Map) {
-        final code = body['code'] ?? body['error'];
+        final message = body['message'];
+        if (message is List && message.isNotEmpty && message.first is String) {
+          return message.first as String;
+        }
+        if (message is String) return message;
+        final code = body['code'];
         if (code is String) return code;
       }
     }

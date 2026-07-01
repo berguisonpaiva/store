@@ -1,11 +1,13 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Result } from '@repo/shared';
+import { UserRole } from '@repo/auth';
 import {
   AdicionarItem,
   AplicarDesconto,
@@ -218,19 +220,39 @@ describe('Vendas controllers', () => {
     expect(out.status).toBe(StatusVenda.CANCELADA);
   });
 
-  test('buscar returns the sale in reais', async () => {
+  test('buscar returns the sale in reais for its owner', async () => {
     buscarVenda.execute.mockResolvedValue(
       Result.ok(vendaDTO({ subtotal: 3000, desconto: 500, total: 2500 })),
     );
 
-    const out = await queries.buscar(VENDA_ID);
+    const out = await queries.buscar(USUARIO_ID, UserRole.OPERADOR, VENDA_ID);
 
     expect(out.subtotal).toBe(30);
     expect(out.desconto).toBe(5);
     expect(out.total).toBe(25);
   });
 
-  test('listar maps the page to reais', async () => {
+  test('buscar returns another operator sale to an ADMIN', async () => {
+    buscarVenda.execute.mockResolvedValue(
+      Result.ok(vendaDTO({ usuarioId: 'someone-else' })),
+    );
+
+    const out = await queries.buscar(USUARIO_ID, UserRole.ADMIN, VENDA_ID);
+
+    expect(out.id).toBe(VENDA_ID);
+  });
+
+  test('buscar forbids a non-ADMIN reading another operator sale (ACESSO_NEGADO)', async () => {
+    buscarVenda.execute.mockResolvedValue(
+      Result.ok(vendaDTO({ usuarioId: 'someone-else' })),
+    );
+
+    await expect(
+      queries.buscar(USUARIO_ID, UserRole.OPERADOR, VENDA_ID),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  test('listar scopes a non-ADMIN to their own sales (ignores usuarioId filter)', async () => {
     listarVendas.execute.mockResolvedValue(
       Result.ok({
         data: [vendaDTO({ total: 2500 })],
@@ -238,10 +260,36 @@ describe('Vendas controllers', () => {
       }),
     );
 
-    const out = await queries.listar({ page: 1, pageSize: 20 });
+    const out = await queries.listar(USUARIO_ID, UserRole.OPERADOR, {
+      page: 1,
+      pageSize: 20,
+      usuarioId: 'someone-else',
+    });
 
+    expect(listarVendas.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ usuarioId: USUARIO_ID }),
+    );
     expect(out.data[0].total).toBe(25);
     expect(out.meta.total).toBe(1);
+  });
+
+  test('listar lets an ADMIN filter by any usuarioId', async () => {
+    listarVendas.execute.mockResolvedValue(
+      Result.ok({
+        data: [],
+        meta: { page: 1, pageSize: 20, total: 0, totalPages: 0 },
+      }),
+    );
+
+    await queries.listar(USUARIO_ID, UserRole.ADMIN, {
+      page: 1,
+      pageSize: 20,
+      usuarioId: 'someone-else',
+    });
+
+    expect(listarVendas.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ usuarioId: 'someone-else' }),
+    );
   });
 
   test('resumo returns aggregated totals in reais', async () => {
@@ -260,7 +308,7 @@ describe('Vendas controllers', () => {
       }),
     );
 
-    const out = await queries.resumo({});
+    const out = await queries.resumo(USUARIO_ID, UserRole.ADMIN, {});
 
     expect(out).toEqual({
       quantidade: 3,
@@ -345,10 +393,12 @@ describe('Vendas controllers', () => {
   });
 
   test('buscar maps SALE_NOT_FOUND -> 404', async () => {
-    buscarVenda.execute.mockResolvedValue(Result.fail(VendaError.SALE_NOT_FOUND));
-    await expect(queries.buscar(VENDA_ID)).rejects.toBeInstanceOf(
-      NotFoundException,
+    buscarVenda.execute.mockResolvedValue(
+      Result.fail(VendaError.SALE_NOT_FOUND),
     );
+    await expect(
+      queries.buscar(USUARIO_ID, UserRole.OPERADOR, VENDA_ID),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   // --- Route ordering guard --------------------------------------------------

@@ -53,7 +53,8 @@ import { VariationsController } from './variations.controller';
     },
     {
       provide: DeactivateProduct,
-      useFactory: (repo: ProductPrismaRepository) => new DeactivateProduct(repo),
+      useFactory: (repo: ProductPrismaRepository) =>
+        new DeactivateProduct(repo),
       inject: [ProductPrismaRepository],
     },
     {
@@ -78,7 +79,8 @@ import { VariationsController } from './variations.controller';
     },
     {
       provide: ActivateVariation,
-      useFactory: (repo: ProductPrismaRepository) => new ActivateVariation(repo),
+      useFactory: (repo: ProductPrismaRepository) =>
+        new ActivateVariation(repo),
       inject: [ProductPrismaRepository],
     },
     {
@@ -89,7 +91,8 @@ import { VariationsController } from './variations.controller';
     },
     {
       provide: FindVariationBySku,
-      useFactory: (repo: ProductPrismaRepository) => new FindVariationBySku(repo),
+      useFactory: (repo: ProductPrismaRepository) =>
+        new FindVariationBySku(repo),
       inject: [ProductPrismaRepository],
     },
     {

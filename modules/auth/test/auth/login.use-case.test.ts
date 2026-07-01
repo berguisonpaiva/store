@@ -1,4 +1,5 @@
 import { AuthError, Login } from '../../src/auth'
+import { UserRole } from '../../src/user'
 import { FakeHashComparer } from '../mock/fake-hash'
 import { FakeTokenService } from '../mock/fake-token-service'
 import { InMemoryUserRepository } from '../mock/in-memory-user.repository'
@@ -12,9 +13,14 @@ function setup(correctPassword = 'secret') {
 }
 
 describe('Login', () => {
-  test('issues access + refresh tokens for valid active credentials', async () => {
+  test('issues access + refresh tokens and the user identity for valid active credentials', async () => {
     const { users, login } = setup()
-    await users.create(buildUser({ email: 'staff@store.com', active: true }))
+    const user = buildUser({
+      email: 'staff@store.com',
+      active: true,
+      role: UserRole.ADMIN,
+    })
+    await users.create(user)
 
     const result = await login.execute({
       email: 'staff@store.com',
@@ -24,6 +30,11 @@ describe('Login', () => {
     expect(result.isOk).toBe(true)
     expect(result.instance.accessToken).toBeTruthy()
     expect(result.instance.refreshToken).toBeTruthy()
+    expect(result.instance.user).toEqual({
+      id: user.id,
+      name: user.name,
+      role: UserRole.ADMIN,
+    })
   })
 
   test('rejects an inactive user with USER_INACTIVE', async () => {

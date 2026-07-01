@@ -129,12 +129,12 @@ void main() {
   });
 
   group('error code → Failure', () {
-    test('CASH_SESSION_ALREADY_OPEN → CashSessionAlreadyOpenFailure', () async {
+    test('CAIXA_JA_ABERTO → CashSessionAlreadyOpenFailure', () async {
       when(() => remote.abrir(valorAbertura: any(named: 'valorAbertura')))
           .thenThrow(
         const CashSessionException(
           'conflict',
-          code: 'CASH_SESSION_ALREADY_OPEN',
+          code: 'CAIXA_JA_ABERTO',
           statusCode: 409,
         ),
       );
@@ -146,11 +146,11 @@ void main() {
       );
     });
 
-    test('CASH_SESSION_NOT_FOUND → CashSessionNotFoundFailure', () async {
+    test('CAIXA_NAO_ENCONTRADO → CashSessionNotFoundFailure', () async {
       when(() => remote.getResumo(any())).thenThrow(
         const CashSessionException(
           'missing',
-          code: 'CASH_SESSION_NOT_FOUND',
+          code: 'CAIXA_NAO_ENCONTRADO',
           statusCode: 404,
         ),
       );
@@ -159,7 +159,7 @@ void main() {
       expect(result.getLeft().toNullable(), isA<CashSessionNotFoundFailure>());
     });
 
-    test('CASH_SESSION_ALREADY_CLOSED → CashSessionAlreadyClosedFailure',
+    test('CAIXA_JA_FECHADO → CashSessionAlreadyClosedFailure',
         () async {
       when(
         () => remote.fechar(
@@ -169,7 +169,7 @@ void main() {
       ).thenThrow(
         const CashSessionException(
           'closed',
-          code: 'CASH_SESSION_ALREADY_CLOSED',
+          code: 'CAIXA_JA_FECHADO',
           statusCode: 409,
         ),
       );
@@ -184,7 +184,7 @@ void main() {
       );
     });
 
-    test('PENDING_SALE_IN_SESSION → PendingSaleInSessionFailure', () async {
+    test('VENDA_PENDENTE_NO_FECHAMENTO → PendingSaleInSessionFailure', () async {
       when(
         () => remote.fechar(
           sessaoId: any(named: 'sessaoId'),
@@ -193,8 +193,8 @@ void main() {
       ).thenThrow(
         const CashSessionException(
           'pending',
-          code: 'PENDING_SALE_IN_SESSION',
-          statusCode: 409,
+          code: 'VENDA_PENDENTE_NO_FECHAMENTO',
+          statusCode: 422,
         ),
       );
 

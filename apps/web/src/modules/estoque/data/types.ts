@@ -3,8 +3,6 @@ import type { PaginationMetaDTO, VariationLookupDTO } from '@/modules/catalog/da
 export type InventoryBalanceDTO = {
   variacaoId: string;
   saldoAtual: number;
-  quantidadeReservada: number;
-  saldoDisponivel: number;
   estoqueMinimo: number;
 };
 
@@ -28,8 +26,6 @@ export type InventoryMovementDTO = {
 export type InventoryLowStockItemDTO = {
   variacaoId: string;
   saldoAtual: number;
-  quantidadeReservada: number;
-  saldoDisponivel: number;
   estoqueMinimo: number;
 };
 

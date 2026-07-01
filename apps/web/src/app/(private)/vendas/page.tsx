@@ -1,41 +1,44 @@
-import { NoSessionBlock } from '@/modules/vendas/components/no-session-block';
-import { SaleScreen } from '@/modules/vendas/components/sale-screen';
-import { StartSaleButton } from '@/modules/vendas/components/start-sale-button';
+import { redirect } from 'next/navigation';
+import { auth } from '@/lib/auth';
+import { VendasList } from '@/modules/vendas-admin/components/vendas-list';
 import {
-  getOperatorOpenSession,
-  getVenda,
-  listVariationOptions,
-} from '@/modules/vendas/data/vendas.api';
+  listOperatorOptions,
+  listVendas,
+} from '@/modules/vendas-admin/data/vendas.api';
+import { parseVendasFilter } from '@/modules/vendas-admin/schemas/vendas-filter.schema';
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
 /**
- * PDV sale screen (private). Server Component: gates the screen on an open cash
- * session (RF — `NO_OPEN_CASH_SESSION` blocks selling), then either deep-links
- * to an in-progress sale (`?venda=<id>`) or offers to start a new one. The
- * autocomplete options (active variations) are loaded server-side with the
- * session Bearer token.
+ * ADMIN-only "Vendas" listing (RN04). On load, reads the session and redirects
+ * any non-ADMIN to `/dashboard` before fetching any sale data — defense in depth
+ * over the authoritative backend `RolesGuard` on `GET /vendas`; hiding the
+ * sidebar entry is only UX. This panel is read-only (design.md Decision 7). It
+ * mirrors the sibling ADMIN "Caixas" page.
  */
 export default async function VendasPage({
   searchParams,
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const session = await getOperatorOpenSession();
-  if (!session) {
-    return <NoSessionBlock />;
+  const session = await auth();
+  if (session?.user?.role !== 'ADMIN') {
+    redirect('/dashboard');
   }
 
   const sp = await searchParams;
-  const vendaId = typeof sp.venda === 'string' ? sp.venda : undefined;
+  const filters = parseVendasFilter(sp);
 
-  const options = await listVariationOptions();
+  const [vendas, operators] = await Promise.all([
+    listVendas(filters),
+    listOperatorOptions(),
+  ]);
 
-  if (!vendaId) {
-    return <StartSaleButton />;
-  }
-
-  const venda = await getVenda(vendaId);
-
-  return <SaleScreen initialVenda={venda} variationOptions={options} />;
+  return (
+    <VendasList
+      vendas={vendas.data}
+      meta={vendas.meta}
+      operators={operators}
+    />
+  );
 }

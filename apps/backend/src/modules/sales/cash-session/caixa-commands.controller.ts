@@ -11,6 +11,7 @@ import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -58,10 +59,12 @@ export class CaixaCommandsController {
 
   @Post('abrir')
   @HttpCode(201)
-  @Papeis(UserRole.MASTER, UserRole.ADMIN, UserRole.OPERADOR)
-  @ApiOperation({ summary: 'Open a cash session for the authenticated operator' })
+  @Papeis(UserRole.ADMIN, UserRole.OPERADOR)
+  @ApiOperation({
+    summary: 'Open a cash session for the authenticated operator',
+  })
   @ApiCreatedResponse({ description: 'Session opened', type: SessaoOutDTO })
-  @ApiConflictResponse({ description: 'CASH_SESSION_ALREADY_OPEN' })
+  @ApiConflictResponse({ description: 'CAIXA_JA_ABERTO' })
   async abrir(
     @CurrentUser('id') operadorId: string,
     @Body() dto: AbrirCaixaInDTO,
@@ -77,43 +80,68 @@ export class CaixaCommandsController {
 
   @Post(':id/fechar')
   @HttpCode(200)
-  @Papeis(UserRole.MASTER, UserRole.ADMIN, UserRole.OPERADOR)
-  @ApiOperation({ summary: 'Close a cash session with a counted amount' })
+  @Papeis(UserRole.ADMIN, UserRole.OPERADOR)
+  @ApiOperation({
+    summary: 'Close the caller own cash session with a counted amount',
+  })
   @ApiOkResponse({ description: 'Session closed', type: FecharCaixaOutDTO })
-  @ApiNotFoundResponse({ description: 'CASH_SESSION_NOT_FOUND' })
-  @ApiConflictResponse({ description: 'CASH_SESSION_ALREADY_CLOSED' })
-  @ApiUnprocessableEntityResponse({ description: 'PENDING_SALE_IN_SESSION' })
+  @ApiNotFoundResponse({ description: 'CAIXA_NAO_ENCONTRADO' })
+  @ApiForbiddenResponse({ description: 'NAO_E_DONO_DO_CAIXA' })
+  @ApiConflictResponse({ description: 'CAIXA_JA_FECHADO' })
+  @ApiUnprocessableEntityResponse({
+    description: 'VENDA_PENDENTE_NO_FECHAMENTO',
+  })
   async fechar(
+    @CurrentUser('id') usuarioId: string,
     @Param('id', ParseUUIDPipe) sessaoId: string,
     @Body() dto: FecharCaixaInDTO,
   ): Promise<FecharCaixaOutDTO> {
     const resultado = unwrap(
       await this.fecharCaixa.execute({
         sessaoId,
-        valorFechamento: reaisToCents(dto.valorFechamento),
+        usuarioId,
+        valorFechamento: reaisToCents(dto.valorFechamento ?? 0),
       }),
     );
     return {
       sessaoId: resultado.sessaoId,
-      esperado: centsToReais(resultado.esperado),
+      esperado: centsToReais(resultado.resumo.saldoEsperado),
       contado: centsToReais(resultado.contado),
       divergencia: centsToReais(resultado.divergencia),
+      resumo: {
+        totalVendas: centsToReais(resultado.resumo.totalVendas),
+        qtdVendas: resultado.resumo.qtdVendas,
+        totalPorForma: this.totalPorFormaToReais(
+          resultado.resumo.totalPorForma,
+        ),
+        sangrias: centsToReais(resultado.resumo.sangrias),
+        suprimentos: centsToReais(resultado.resumo.suprimentos),
+        saldoEsperado: centsToReais(resultado.resumo.saldoEsperado),
+      },
     };
   }
 
   @Post(':id/sangria')
   @HttpCode(201)
-  @Papeis(UserRole.MASTER, UserRole.ADMIN, UserRole.OPERADOR)
-  @ApiOperation({ summary: 'Register a sangria (cash withdrawal) on a session' })
-  @ApiCreatedResponse({ description: 'Sangria registered', type: MovimentacaoOutDTO })
-  @ApiNotFoundResponse({ description: 'CASH_SESSION_NOT_FOUND' })
+  @Papeis(UserRole.ADMIN, UserRole.OPERADOR)
+  @ApiOperation({
+    summary: 'Register a sangria (cash withdrawal) on the caller own session',
+  })
+  @ApiCreatedResponse({
+    description: 'Sangria registered',
+    type: MovimentacaoOutDTO,
+  })
+  @ApiNotFoundResponse({ description: 'CAIXA_NAO_ENCONTRADO' })
+  @ApiForbiddenResponse({ description: 'NAO_E_DONO_DO_CAIXA' })
   async sangria(
+    @CurrentUser('id') usuarioId: string,
     @Param('id', ParseUUIDPipe) sessaoId: string,
     @Body() dto: MovimentacaoInDTO,
   ): Promise<MovimentacaoOutDTO> {
     const movimentacao = unwrap(
       await this.registrarSangria.execute({
         sessaoId,
+        usuarioId,
         valor: reaisToCents(dto.valor),
         observacao: dto.observacao,
       }),
@@ -129,17 +157,26 @@ export class CaixaCommandsController {
 
   @Post(':id/suprimento')
   @HttpCode(201)
-  @Papeis(UserRole.MASTER, UserRole.ADMIN, UserRole.OPERADOR)
-  @ApiOperation({ summary: 'Register a suprimento (cash reinforcement) on a session' })
-  @ApiCreatedResponse({ description: 'Suprimento registered', type: MovimentacaoOutDTO })
-  @ApiNotFoundResponse({ description: 'CASH_SESSION_NOT_FOUND' })
+  @Papeis(UserRole.ADMIN, UserRole.OPERADOR)
+  @ApiOperation({
+    summary:
+      'Register a suprimento (cash reinforcement) on the caller own session',
+  })
+  @ApiCreatedResponse({
+    description: 'Suprimento registered',
+    type: MovimentacaoOutDTO,
+  })
+  @ApiNotFoundResponse({ description: 'CAIXA_NAO_ENCONTRADO' })
+  @ApiForbiddenResponse({ description: 'NAO_E_DONO_DO_CAIXA' })
   async suprimento(
+    @CurrentUser('id') usuarioId: string,
     @Param('id', ParseUUIDPipe) sessaoId: string,
     @Body() dto: MovimentacaoInDTO,
   ): Promise<MovimentacaoOutDTO> {
     const movimentacao = unwrap(
       await this.registrarSuprimento.execute({
         sessaoId,
+        usuarioId,
         valor: reaisToCents(dto.valor),
         observacao: dto.observacao,
       }),
@@ -151,6 +188,16 @@ export class CaixaCommandsController {
       observacao: movimentacao.observacao,
       criadaEm: movimentacao.criadaEm,
     };
+  }
+
+  private totalPorFormaToReais(
+    totalPorForma: Record<string, number>,
+  ): Record<string, number> {
+    const out: Record<string, number> = {};
+    for (const [forma, valor] of Object.entries(totalPorForma)) {
+      out[forma] = centsToReais(valor);
+    }
+    return out;
   }
 
   private toSessaoOut(dto: ReturnType<typeof toSessaoCaixaDTO>): SessaoOutDTO {

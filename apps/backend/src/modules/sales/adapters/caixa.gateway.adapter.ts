@@ -1,26 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { Result, TransactionContext } from '@repo/shared';
-import {
-  CaixaGateway,
-  CaixaPortService,
-  MovimentacaoCaixa,
-  SessaoCaixaResumo,
-  TipoMovimentacaoCaixa,
-} from '@repo/sales';
-import { CaixaPrismaRepository } from '../cash-session/adapters/caixa.prisma.repository';
+import { CaixaGateway, CaixaPortService, SessaoCaixaResumo } from '@repo/sales';
 
-/// Binds the `vendas` domain `CaixaGateway` port to the `caixa` cash port. The
-/// open-session lookup and the `VENDA` movement go through `CaixaPortService` (the
-/// sanctioned surface); session-state checks and the cancel-time cash reversal use
-/// the caixa repository. The reversal is recorded as a `SANGRIA` (cash leaving the
-/// drawer) of the same value, which nets the sale's cash to zero in the session
-/// summary (`vendasDinheiro - sangrias`).
+/// Binds the `vendas` domain `CaixaGateway` port to the sealed `caixa` cash port
+/// (`CaixaPortService`). Every interaction — open-session lookup, session-state
+/// check, the `VENDA` movement, and its reversal — flows through `CaixaPort`
+/// (Decision 3); the adapter never touches the caixa repository directly, and the
+/// `tx` is threaded so cash joins the sale's single transaction (RN09).
 @Injectable()
 export class CaixaGatewayAdapter implements CaixaGateway {
-  constructor(
-    private readonly caixaPort: CaixaPortService,
-    private readonly caixaRepository: CaixaPrismaRepository,
-  ) {}
+  constructor(private readonly caixaPort: CaixaPortService) {}
 
   async caixaAbertoDoOperador(
     usuarioId: string,
@@ -39,45 +28,22 @@ export class CaixaGatewayAdapter implements CaixaGateway {
   }
 
   async isSessaoAberta(sessaoCaixaId: string): Promise<Result<boolean>> {
-    const sessao = await this.caixaRepository.findSessaoById(sessaoCaixaId);
-    if (sessao.isFailure) {
-      return sessao.withFail;
-    }
-    return Result.ok(Boolean(sessao.instance?.aberta));
+    return this.caixaPort.isSessaoAberta(sessaoCaixaId);
   }
 
   async registrarVenda(
     sessaoCaixaId: string,
     valor: number,
-    _tx?: TransactionContext,
+    tx?: TransactionContext,
   ): Promise<Result<void>> {
-    return this.caixaPort.registrarVenda(sessaoCaixaId, valor);
+    return this.caixaPort.registrarVenda(sessaoCaixaId, valor, tx);
   }
 
   async estornarVenda(
     sessaoCaixaId: string,
     valor: number,
-    _tx?: TransactionContext,
+    tx?: TransactionContext,
   ): Promise<Result<void>> {
-    const movimentacao = MovimentacaoCaixa.criar(
-      TipoMovimentacaoCaixa.SANGRIA,
-      {
-        sessaoId: sessaoCaixaId,
-        valor,
-        observacao: 'Estorno de venda cancelada',
-      },
-    );
-    if (movimentacao.isFailure) {
-      return movimentacao.withFail;
-    }
-
-    const persisted = await this.caixaRepository.registrarMovimentacao(
-      movimentacao.instance,
-    );
-    if (persisted.isFailure) {
-      return persisted.withFail;
-    }
-
-    return Result.ok();
+    return this.caixaPort.estornarVenda(sessaoCaixaId, valor, tx);
   }
 }

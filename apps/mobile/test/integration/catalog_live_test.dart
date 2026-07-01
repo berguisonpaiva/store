@@ -13,8 +13,8 @@ import 'package:mobile/domain/catalog/repositories/catalog_repository.dart';
 /// CatalogRemoteDataSourceImpl → CatalogRepositoryImpl) against a backend on
 /// localhost:4000. Skips gracefully when the backend is offline.
 const _baseUrl = 'http://localhost:4000';
-const _email = 'master@store.local';
-const _password = 'Master!123';
+const _email = 'admin@store.local';
+const _password = 'Admin!123';
 
 void main() {
   late HttpClient http;

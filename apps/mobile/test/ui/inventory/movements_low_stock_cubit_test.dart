@@ -71,8 +71,6 @@ void main() {
           LowStockItemEntity(
             variacaoId: 'v1',
             saldoAtual: 1,
-            quantidadeReservada: 0,
-            saldoDisponivel: 1,
             estoqueMinimo: 5,
           ),
         ]),

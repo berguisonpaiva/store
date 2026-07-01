@@ -1,4 +1,4 @@
-import { Result } from '@repo/shared'
+import { Result, TransactionContext } from '@repo/shared'
 import { EstoqueError } from '../errors'
 import { CatalogVariationReader, EstoquePort, EstoqueRepository } from '../provider'
 import { EstoquePolicyService } from '../service'
@@ -18,6 +18,7 @@ export class EstoquePortService extends EstoqueUseCaseBase implements EstoquePor
     origemVendaId: string,
     usuarioId: string,
     motivo: MotivoMovimentacaoEstoque = MotivoMovimentacaoEstoque.VENDA_ONLINE,
+    tx?: TransactionContext,
   ): Promise<Result<void>> {
     if (!SALE_REASONS.has(motivo)) {
       return Result.fail(EstoqueError.MOTIVO_MOVIMENTACAO_INVALIDO)
@@ -28,13 +29,12 @@ export class EstoquePortService extends EstoqueUseCaseBase implements EstoquePor
       return context.withFail
     }
 
-    const availableBalance = EstoquePolicyService.assertSaldoDisponivel(
+    const sufficientBalance = EstoquePolicyService.assertSaldoSuficiente(
       context.instance.saldo.saldoAtual,
-      context.instance.saldo.quantidadeReservada,
       quantidade,
     )
-    if (availableBalance.isFailure) {
-      return availableBalance.withFail
+    if (sufficientBalance.isFailure) {
+      return sufficientBalance.withFail
     }
 
     return this.persistMovement(context.instance.saldo, {
@@ -43,6 +43,7 @@ export class EstoquePortService extends EstoqueUseCaseBase implements EstoquePor
       quantidade,
       origemVendaId,
       usuarioId,
+      tx,
     })
   }
 
@@ -52,6 +53,7 @@ export class EstoquePortService extends EstoqueUseCaseBase implements EstoquePor
     origemVendaId: string,
     usuarioId: string,
     motivo: MotivoMovimentacaoEstoque = MotivoMovimentacaoEstoque.VENDA_ONLINE,
+    tx?: TransactionContext,
   ): Promise<Result<void>> {
     if (!SALE_REASONS.has(motivo)) {
       return Result.fail(EstoqueError.MOTIVO_MOVIMENTACAO_INVALIDO)
@@ -68,6 +70,7 @@ export class EstoquePortService extends EstoqueUseCaseBase implements EstoquePor
       quantidade,
       origemVendaId,
       usuarioId,
+      tx,
     })
   }
 }

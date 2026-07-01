@@ -35,7 +35,7 @@ export class InventoryCommandsController {
 
   @Post('entries')
   @HttpCode(201)
-  @Papeis(UserRole.MASTER, UserRole.ADMIN, UserRole.OPERADOR)
+  @Papeis(UserRole.ADMIN, UserRole.OPERADOR)
   @ApiOperation({ summary: 'Register a stock entry' })
   @ApiCreatedResponse({ description: 'Entry registered' })
   async createEntry(
@@ -54,7 +54,7 @@ export class InventoryCommandsController {
 
   @Post('exits')
   @HttpCode(201)
-  @Papeis(UserRole.MASTER, UserRole.ADMIN, UserRole.OPERADOR)
+  @Papeis(UserRole.ADMIN, UserRole.OPERADOR)
   @ApiOperation({ summary: 'Register a manual stock exit' })
   @ApiCreatedResponse({ description: 'Exit registered' })
   async createExit(
@@ -73,7 +73,7 @@ export class InventoryCommandsController {
 
   @Post('adjustments')
   @HttpCode(201)
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
+  @Papeis(UserRole.ADMIN)
   @ApiOperation({ summary: 'Adjust inventory balance to an absolute value' })
   @ApiCreatedResponse({ description: 'Adjustment registered' })
   async createAdjustment(

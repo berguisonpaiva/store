@@ -5,12 +5,12 @@ TBD - created by archiving change estoque-web. Update Purpose after archive.
 ## Requirements
 ### Requirement: Consult balance by variation
 
-The system SHALL provide a private screen to consult, for a variation selected by SKU/nome search, its `saldoAtual` and `saldoDisponivel` (`saldoAtual − quantidadeReservada`), read server-side from the backend.
+The system SHALL provide a private screen to consult, for a variation selected by SKU/nome search, its `saldoAtual` and `estoqueMinimo`, read server-side from the backend. No `saldoDisponivel`/reservation value is shown.
 
 #### Scenario: Show balance
 
 - **WHEN** the user selects a variation
-- **THEN** the screen reads from the consultar-saldo query endpoint and shows `saldoAtual` and `saldoDisponivel` (RF-EST-06)
+- **THEN** the screen reads from the consultar-saldo query endpoint and shows `saldoAtual` and `estoqueMinimo` (RF-EST-06)
 
 #### Scenario: Unknown variation
 
@@ -58,4 +58,23 @@ The system SHALL implement the inventory reads with server-side `apiFetch`/`apiJ
 
 - **WHEN** any inventory read screen loads on the server
 - **THEN** the request carries the session Bearer token and a 401 is treated as an auth failure
+
+### Requirement: ADMIN-only inventory navigation and page guard
+
+The system SHALL surface the inventory (Estoque) area in the private layout sidebar only for users with the ADMIN role, and each private inventory route SHALL perform a server-side permission check on load, redirecting non-ADMIN users to the main route. Hiding the sidebar entry is UX reinforcement; the backend `RolesGuard` remains authoritative (RN04).
+
+#### Scenario: ADMIN sees the Estoque entry
+
+- **WHEN** an authenticated ADMIN loads the private layout
+- **THEN** the Estoque sidebar entry is visible and its routes are reachable
+
+#### Scenario: Non-ADMIN does not see the entry
+
+- **WHEN** an authenticated non-ADMIN user loads the private layout
+- **THEN** the Estoque sidebar entry is not rendered
+
+#### Scenario: Non-ADMIN is redirected from an inventory route
+
+- **WHEN** a non-ADMIN user navigates directly to a private inventory route
+- **THEN** the page's permission check redirects them to the main route
 

@@ -1,9 +1,10 @@
 import { Result, ValueObject, ValueObjectConfig } from '@repo/shared'
+import { ProductError } from '../errors'
 
 /// Money value object stored as an integer number of cents to avoid
 /// floating-point drift. Strictly greater than zero (RF-CAT-05).
 export class Price extends ValueObject<number, ValueObjectConfig> {
-  private static readonly INVALID_PRICE = 'INVALID_PRICE'
+  private static readonly INVALID_PRICE = ProductError.INVALID_PRICE
 
   private constructor(value: number, config?: ValueObjectConfig) {
     super(value, config)
@@ -21,20 +22,16 @@ export class Price extends ValueObject<number, ValueObjectConfig> {
   }
 
   public static tryCreate(value: number, config?: ValueObjectConfig): Result<Price> {
-    try {
-      if (typeof value !== 'number' || !Number.isFinite(value)) {
-        throw new Error(Price.INVALID_PRICE)
-      }
-      if (!Number.isInteger(value)) {
-        throw new Error(Price.INVALID_PRICE)
-      }
-      if (value <= 0) {
-        throw new Error(Price.INVALID_PRICE)
-      }
-
-      return Result.ok(new Price(value, config))
-    } catch (error: any) {
-      return Result.fail(error.message ?? Price.INVALID_PRICE)
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      return Result.fail(Price.INVALID_PRICE)
     }
+    if (!Number.isInteger(value)) {
+      return Result.fail(Price.INVALID_PRICE)
+    }
+    if (value <= 0) {
+      return Result.fail(Price.INVALID_PRICE)
+    }
+
+    return Result.ok(new Price(value, config))
   }
 }

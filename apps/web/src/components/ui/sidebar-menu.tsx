@@ -8,6 +8,7 @@ import { AppLogo } from '@/components/branding/app-logo';
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -28,6 +29,11 @@ export type SidebarMenuItem = {
   icon?: SidebarIcon;
   match?: 'exact' | 'prefix';
   excludeHrefs?: string[];
+  /**
+   * Roles allowed to see this item. Omit to show for everyone. Filtering is a
+   * UX reinforcement only — the backend `RolesGuard` is authoritative.
+   */
+  roles?: readonly string[];
 };
 
 export type SidebarMenuSection = {
@@ -39,6 +45,12 @@ export type SidebarMenuSection = {
 export type SidebarMenuProps = {
   mainItem?: SidebarMenuItem;
   sections: SidebarMenuSection[];
+  /**
+   * Items pinned to the bottom of the sidebar, visually separated from the
+   * primary list (the "settings at the bottom" admin-console pattern). Rendered
+   * inside a `SidebarFooter`. Already role-filtered by the caller.
+   */
+  footerItems?: SidebarMenuItem[];
   homeHref?: string;
 };
 
@@ -96,7 +108,12 @@ function MenuSections({ sections, pathname }: { sections: SidebarMenuSection[]; 
  * em components/; este componente apenas adapta a configuração aos primitives
  * do registry.
  */
-export function SidebarMenu({ mainItem, sections, homeHref = '/' }: SidebarMenuProps) {
+export function SidebarMenu({
+  mainItem,
+  sections,
+  footerItems,
+  homeHref = '/',
+}: SidebarMenuProps) {
   const pathname = usePathname();
 
   return (
@@ -122,6 +139,16 @@ export function SidebarMenu({ mainItem, sections, homeHref = '/' }: SidebarMenuP
 
         <MenuSections sections={sections} pathname={pathname} />
       </SidebarContent>
+
+      {footerItems && footerItems.length > 0 ? (
+        <SidebarFooter>
+          <ShadcnSidebarMenu>
+            {footerItems.map((item) => (
+              <SidebarItemLink key={item.id} item={item} active={isItemActive(pathname, item)} />
+            ))}
+          </ShadcnSidebarMenu>
+        </SidebarFooter>
+      ) : null}
 
       <SidebarRail />
     </Sidebar>

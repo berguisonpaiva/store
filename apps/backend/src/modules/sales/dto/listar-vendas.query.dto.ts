@@ -26,17 +26,26 @@ export class ListarVendasQueryDto {
   @Min(1)
   pageSize: number = 20;
 
-  @ApiPropertyOptional({ format: 'date-time', description: 'Period start (ISO 8601)' })
+  @ApiPropertyOptional({
+    format: 'date-time',
+    description: 'Period start (ISO 8601)',
+  })
   @IsOptional()
   @IsISO8601()
   startDate?: string;
 
-  @ApiPropertyOptional({ format: 'date-time', description: 'Period end (ISO 8601)' })
+  @ApiPropertyOptional({
+    format: 'date-time',
+    description: 'Period end (ISO 8601)',
+  })
   @IsOptional()
   @IsISO8601()
   endDate?: string;
 
-  @ApiPropertyOptional({ format: 'uuid', description: 'Operator (usuarioId) filter' })
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: 'Operator (usuarioId) filter',
+  })
   @IsOptional()
   @IsUUID()
   usuarioId?: string;
@@ -54,17 +63,26 @@ export class ListarVendasQueryDto {
 
 /// `GET /vendas/resumo` query string. Same filters as the list, without pagination.
 export class ResumoVendasQueryDto {
-  @ApiPropertyOptional({ format: 'date-time', description: 'Period start (ISO 8601)' })
+  @ApiPropertyOptional({
+    format: 'date-time',
+    description: 'Period start (ISO 8601)',
+  })
   @IsOptional()
   @IsISO8601()
   startDate?: string;
 
-  @ApiPropertyOptional({ format: 'date-time', description: 'Period end (ISO 8601)' })
+  @ApiPropertyOptional({
+    format: 'date-time',
+    description: 'Period end (ISO 8601)',
+  })
   @IsOptional()
   @IsISO8601()
   endDate?: string;
 
-  @ApiPropertyOptional({ format: 'uuid', description: 'Operator (usuarioId) filter' })
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: 'Operator (usuarioId) filter',
+  })
   @IsOptional()
   @IsUUID()
   usuarioId?: string;

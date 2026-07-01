@@ -1,18 +1,15 @@
 import { Variation } from '@repo/catalog'
 import { Entity, EntityProps, Id, Result } from '@repo/shared'
-import { EstoqueError } from '../errors'
 import { Saldo } from './saldo.vo'
 
 export interface EstoqueSaldoProps extends EntityProps {
   variacaoId: string
   saldoAtual: number
-  quantidadeReservada: number
   estoqueMinimo: number
 }
 
 export interface CreateFromCatalogVariationOverrides {
   saldoAtual?: number
-  quantidadeReservada?: number
   estoqueMinimo?: number
 }
 
@@ -30,18 +27,14 @@ export class EstoqueSaldo extends Entity<EstoqueSaldo, EstoqueSaldoProps> {
   static tryCreate(props: EstoqueSaldoProps): Result<EstoqueSaldo> {
     const variacaoId = Id.required(props.variacaoId, { attribute: 'variacaoId' })
     const saldoAtual = Saldo.tryCreate(props.saldoAtual)
-    const quantidadeReservada = Saldo.tryCreate(props.quantidadeReservada)
     const estoqueMinimo = Saldo.tryCreate(props.estoqueMinimo)
 
-    const validated = Result.combine([variacaoId, saldoAtual, quantidadeReservada, estoqueMinimo])
+    const validated = Result.combine([variacaoId, saldoAtual, estoqueMinimo])
     if (validated.isFailure) {
       return validated.withFail
     }
 
-    const [validVariacaoId, validSaldoAtual, validQuantidadeReservada, validEstoqueMinimo] = validated.instance
-    if (validSaldoAtual.value - validQuantidadeReservada.value < 0) {
-      return Result.fail(EstoqueError.ESTOQUE_INSUFICIENTE)
-    }
+    const [validVariacaoId, validSaldoAtual, validEstoqueMinimo] = validated.instance
 
     return Result.ok(
       new EstoqueSaldo({
@@ -49,7 +42,6 @@ export class EstoqueSaldo extends Entity<EstoqueSaldo, EstoqueSaldoProps> {
         id: validVariacaoId.value,
         variacaoId: validVariacaoId.value,
         saldoAtual: validSaldoAtual.value,
-        quantidadeReservada: validQuantidadeReservada.value,
         estoqueMinimo: validEstoqueMinimo.value,
       }),
     )
@@ -63,7 +55,6 @@ export class EstoqueSaldo extends Entity<EstoqueSaldo, EstoqueSaldoProps> {
       id: variation.id,
       variacaoId: variation.id,
       saldoAtual: overrides.saldoAtual ?? 0,
-      quantidadeReservada: overrides.quantidadeReservada ?? 0,
       estoqueMinimo: overrides.estoqueMinimo ?? variation.minStock,
     })
   }
@@ -76,15 +67,7 @@ export class EstoqueSaldo extends Entity<EstoqueSaldo, EstoqueSaldoProps> {
     return this.props.saldoAtual
   }
 
-  get quantidadeReservada(): number {
-    return this.props.quantidadeReservada
-  }
-
   get estoqueMinimo(): number {
     return this.props.estoqueMinimo
-  }
-
-  get saldoDisponivel(): number {
-    return this.props.saldoAtual - this.props.quantidadeReservada
   }
 }

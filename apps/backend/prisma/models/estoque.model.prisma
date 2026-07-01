@@ -21,7 +21,6 @@ model EstoqueSaldo {
   variacaoId          String    @unique @db.Uuid
   variacao            Variation @relation(fields: [variacaoId], references: [id])
   saldoAtual          Int
-  quantidadeReservada Int       @default(0)
   estoqueMinimo       Int
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt

@@ -30,8 +30,6 @@ export class ConsultarSaldo implements UseCase<ConsultarSaldoInputDTO, SaldoEsto
     return Result.ok({
       variacaoId: variation.instance.id,
       saldoAtual: 0,
-      quantidadeReservada: 0,
-      saldoDisponivel: 0,
       estoqueMinimo: variation.instance.minStock,
     })
   }

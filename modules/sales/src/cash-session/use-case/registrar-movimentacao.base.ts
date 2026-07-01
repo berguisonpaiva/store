@@ -5,7 +5,8 @@ import { MovimentacaoCaixa, TipoMovimentacaoCaixa } from '../model'
 import { CaixaRepository } from '../provider'
 
 /// Shared flow for the manual movement use cases (`SUPRIMENTO`/`SANGRIA`):
-/// the session must exist, and the movement `valor` must be `> 0`.
+/// the session must exist and be owned by the acting operator (RN02), be `ABERTA`
+/// (RN06), and the movement `valor` must be `> 0`.
 export abstract class RegistrarMovimentacaoBase {
   protected constructor(protected readonly repository: CaixaRepository) {}
 
@@ -18,7 +19,15 @@ export abstract class RegistrarMovimentacaoBase {
       return sessao.withFail
     }
     if (!sessao.instance) {
-      return Result.fail(CaixaError.CASH_SESSION_NOT_FOUND)
+      return Result.fail(CaixaError.CAIXA_NAO_ENCONTRADO)
+    }
+    // RN02: only the session owner operates it.
+    if (sessao.instance.operadorId !== input.usuarioId) {
+      return Result.fail(CaixaError.NAO_E_DONO_DO_CAIXA)
+    }
+    // RN06: no movement can be appended to a closed session.
+    if (!sessao.instance.aberta) {
+      return Result.fail(CaixaError.CAIXA_JA_FECHADO)
     }
 
     const movimentacao = MovimentacaoCaixa.criar(tipo, {

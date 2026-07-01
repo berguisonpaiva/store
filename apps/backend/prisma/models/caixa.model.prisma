@@ -1,12 +1,12 @@
 // Cash-session (caixa) persistence. `SessaoCaixa` is the aggregate root and owns
-// its `MovimentacaoCaixa` child rows (1:N). A session is `ABERTO` then `FECHADO`
+// its `MovimentacaoCaixa` child rows (1:N). A session is `ABERTA` then `FECHADA`
 // exactly once. Monetary fields are `Decimal` (reais, 2 decimal places) — never
 // `float`; the `*.prisma` adapter converts reais <-> integer cents at the
 // boundary so the domain keeps its precise cents representation.
 //
-// The "one ABERTO session per operator" invariant is enforced in the domain
+// The "one ABERTA session per operator" invariant is enforced in the domain
 // (`@repo/sales`) AND by a PARTIAL UNIQUE INDEX added in the migration SQL
-// (`operadorId WHERE status = 'ABERTO'`) — Prisma cannot express a partial
+// (`operadorId WHERE status = 'ABERTA'`) — Prisma cannot express a partial
 // unique index natively, so it lives only in the generated migration.
 
 model SessaoCaixa {

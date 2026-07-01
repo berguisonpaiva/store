@@ -15,7 +15,7 @@ export class ValorMonetario extends ValueObject<number, ValueObjectConfig> {
 
   static create(
     value: number,
-    errorCode: string = CaixaError.VALOR_MOVIMENTACAO_INVALIDO,
+    errorCode: string = CaixaError.VALOR_INVALIDO,
     config?: ValueObjectConfig,
   ): ValorMonetario {
     const result = ValorMonetario.tryCreate(value, errorCode, config)
@@ -25,7 +25,7 @@ export class ValorMonetario extends ValueObject<number, ValueObjectConfig> {
 
   static tryCreate(
     value: number,
-    errorCode: string = CaixaError.VALOR_MOVIMENTACAO_INVALIDO,
+    errorCode: string = CaixaError.VALOR_INVALIDO,
     config?: ValueObjectConfig,
   ): Result<ValorMonetario> {
     if (typeof value !== 'number' || !Number.isFinite(value) || !Number.isInteger(value) || value < 0) {

@@ -7,6 +7,7 @@ import {
 } from '../dto/product.dto'
 import { ProductError } from '../errors'
 import { ProductsRepository } from '../provider'
+import { ActiveCategorySpecification } from '../service'
 
 /// Edits a product's name/description/category. The product must exist and a
 /// referenced category must exist (RF-CAT-01).
@@ -22,8 +23,10 @@ export class UpdateProduct implements UseCase<UpdateProductInputDTO, ProductDTO>
     const current = found.instance
 
     if (input.categoryId) {
-      const category = await this.categoriesRepository.findById(input.categoryId)
-      if (category.isFailure) return Result.fail(ProductError.CATEGORY_NOT_FOUND_FOR_PRODUCT)
+      const found = await this.categoriesRepository.findById(input.categoryId)
+      const category = found.isFailure ? null : found.instance
+      const usable = ActiveCategorySpecification.ensureUsable(category)
+      if (usable.isFailure) return usable.withFail
     }
 
     const edited = current.editProfile({

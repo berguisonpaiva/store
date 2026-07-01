@@ -116,12 +116,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get inventoryCurrentBalance => 'Saldo atual';
 
   @override
-  String get inventoryAvailableBalance => 'Disponível';
-
-  @override
-  String get inventoryReserved => 'Reservado';
-
-  @override
   String get inventoryMinimum => 'Mínimo';
 
   @override
@@ -629,4 +623,39 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get vendasErrorNetwork => 'Erro de rede. Tente novamente.';
+
+  @override
+  String get vendasHistoryTitle => 'Minhas vendas';
+
+  @override
+  String get vendasHistoryEmpty => 'Nenhuma venda encontrada.';
+
+  @override
+  String get vendasHistoryFilterAll => 'Todas';
+
+  @override
+  String vendasHistoryNumber(int numero) {
+    return 'Venda #$numero';
+  }
+
+  @override
+  String vendasHistoryItemsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count itens',
+      one: '1 item',
+      zero: 'Nenhum item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get vendasHistoryDetailTitle => 'Detalhe da venda';
+
+  @override
+  String get vendasHistoryItemsSection => 'Itens';
+
+  @override
+  String get vendasHistoryPaymentsSection => 'Pagamentos';
 }

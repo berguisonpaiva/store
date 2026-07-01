@@ -21,8 +21,6 @@ export class InMemoryEstoqueQuery implements EstoqueQuery {
       return Result.ok({
         variacaoId,
         saldoAtual: saldo.saldoAtual,
-        quantidadeReservada: saldo.quantidadeReservada,
-        saldoDisponivel: saldo.saldoDisponivel,
         estoqueMinimo: saldo.estoqueMinimo,
       })
     }
@@ -35,8 +33,6 @@ export class InMemoryEstoqueQuery implements EstoqueQuery {
     return Result.ok({
       variacaoId,
       saldoAtual: 0,
-      quantidadeReservada: 0,
-      saldoDisponivel: 0,
       estoqueMinimo: variation.minStock,
     })
   }
@@ -79,14 +75,10 @@ export class InMemoryEstoqueQuery implements EstoqueQuery {
       .map((variation) => {
         const saldo = this.repository.saldos.get(variation.id)
         const saldoAtual = saldo?.saldoAtual ?? 0
-        const quantidadeReservada = saldo?.quantidadeReservada ?? 0
-        const saldoDisponivel = saldoAtual - quantidadeReservada
 
         return {
           variacaoId: variation.id,
           saldoAtual,
-          quantidadeReservada,
-          saldoDisponivel,
           estoqueMinimo: saldo?.estoqueMinimo ?? variation.minStock,
         }
       })

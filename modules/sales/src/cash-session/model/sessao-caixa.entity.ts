@@ -18,17 +18,17 @@ export interface AbrirSessaoCaixaProps extends EntityProps {
   abertaEm?: Date
 }
 
-/// Aggregate root for a cash drawer session. Starts `ABERTO` and transitions to
-/// `FECHADO` exactly once. `valorAbertura >= 0`; `valorFechamento >= 0` when set.
+/// Aggregate root for a cash drawer session. Starts `ABERTA` and transitions to
+/// `FECHADA` exactly once. `valorAbertura >= 0`; `valorFechamento >= 0` when set.
 export class SessaoCaixa extends Entity<SessaoCaixa, SessaoCaixaProps> {
   private constructor(props: SessaoCaixaProps) {
     super(props)
   }
 
-  /// Opens a new session in `ABERTO` status (RF-CX-01).
+  /// Opens a new session in `ABERTA` status (RF-CX-01).
   static abrir(props: AbrirSessaoCaixaProps): Result<SessaoCaixa> {
     const operadorId = Id.required(props.operadorId, { attribute: 'operadorId' })
-    const valorAbertura = ValorMonetario.tryCreate(props.valorAbertura, CaixaError.VALOR_ABERTURA_INVALIDO)
+    const valorAbertura = ValorMonetario.tryCreate(props.valorAbertura, CaixaError.VALOR_INVALIDO)
 
     const validated = Result.combine([operadorId, valorAbertura])
     if (validated.isFailure) {
@@ -45,7 +45,7 @@ export class SessaoCaixa extends Entity<SessaoCaixa, SessaoCaixaProps> {
         updatedAt: props.updatedAt ?? abertaEm,
         deletedAt: props.deletedAt,
         operadorId: validOperadorId.value,
-        status: StatusSessaoCaixa.ABERTO,
+        status: StatusSessaoCaixa.ABERTA,
         valorAbertura: validValorAbertura.value,
         valorFechamento: null,
         abertaEm,
@@ -64,13 +64,13 @@ export class SessaoCaixa extends Entity<SessaoCaixa, SessaoCaixaProps> {
     return Result.ok(new SessaoCaixa({ ...props, operadorId: operadorId.instance.value }))
   }
 
-  /// Closes an `ABERTO` session (RF-CX-07). Reopening a `FECHADO` session fails.
+  /// Closes an `ABERTA` session (RF-CX-07). Reopening a `FECHADA` session fails.
   fechar(valorFechamento: number, fechadaEm: Date = new Date()): Result<SessaoCaixa> {
-    if (this.props.status === StatusSessaoCaixa.FECHADO) {
-      return Result.fail(CaixaError.CASH_SESSION_ALREADY_CLOSED)
+    if (this.props.status === StatusSessaoCaixa.FECHADA) {
+      return Result.fail(CaixaError.CAIXA_JA_FECHADO)
     }
 
-    const valor = ValorMonetario.tryCreate(valorFechamento, CaixaError.VALOR_FECHAMENTO_INVALIDO)
+    const valor = ValorMonetario.tryCreate(valorFechamento, CaixaError.VALOR_INVALIDO)
     if (valor.isFailure) {
       return valor.withFail
     }
@@ -78,7 +78,7 @@ export class SessaoCaixa extends Entity<SessaoCaixa, SessaoCaixaProps> {
     return Result.ok(
       new SessaoCaixa({
         ...this.props,
-        status: StatusSessaoCaixa.FECHADO,
+        status: StatusSessaoCaixa.FECHADA,
         valorFechamento: valor.instance.value,
         fechadaEm,
         updatedAt: fechadaEm,
@@ -95,7 +95,7 @@ export class SessaoCaixa extends Entity<SessaoCaixa, SessaoCaixaProps> {
   }
 
   get aberta(): boolean {
-    return this.props.status === StatusSessaoCaixa.ABERTO
+    return this.props.status === StatusSessaoCaixa.ABERTA
   }
 
   get valorAbertura(): number {

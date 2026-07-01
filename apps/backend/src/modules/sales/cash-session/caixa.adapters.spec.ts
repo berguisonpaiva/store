@@ -10,11 +10,7 @@ import {
 import { PrismaService } from '../../../db/prisma.service';
 import { CaixaPrismaQuery } from './adapters/caixa.prisma.query';
 import { CaixaPrismaRepository } from './adapters/caixa.prisma.repository';
-import {
-  centsToDecimal,
-  decimalToCents,
-  reaisToCents,
-} from './adapters/money';
+import { centsToDecimal, decimalToCents, reaisToCents } from './adapters/money';
 
 const OPERADOR_ID = '11111111-1111-1111-1111-111111111111';
 const SESSAO_ID = '22222222-2222-2222-2222-222222222222';
@@ -47,7 +43,8 @@ describe('CaixaPrismaRepository.toDomain/fromDomain', () => {
     const movimentacaoCaixa = { create: jest.fn() };
     const prisma = {
       client: { sessaoCaixa, movimentacaoCaixa },
-      runInTransaction: (op: any) => op({ client: { sessaoCaixa, movimentacaoCaixa } }),
+      runInTransaction: (op: any) =>
+        op({ client: { sessaoCaixa, movimentacaoCaixa } }),
       ...overrides,
     } as unknown as PrismaService;
     return { prisma, sessaoCaixa, movimentacaoCaixa };
@@ -84,10 +81,10 @@ describe('CaixaPrismaRepository.toDomain/fromDomain', () => {
     // ...and toDomain rebuilds cents exactly.
     expect(result.instance.valorAbertura).toBe(12345);
     expect(result.instance.operadorId).toBe(OPERADOR_ID);
-    expect(result.instance.status).toBe(StatusSessaoCaixa.ABERTO);
+    expect(result.instance.status).toBe(StatusSessaoCaixa.ABERTA);
   });
 
-  test('abrirSessao maps Prisma P2002 -> CASH_SESSION_ALREADY_OPEN', async () => {
+  test('abrirSessao maps Prisma P2002 -> CAIXA_JA_ABERTO', async () => {
     const { prisma, sessaoCaixa } = makePrisma();
     const repo = new CaixaPrismaRepository(prisma);
 
@@ -106,7 +103,7 @@ describe('CaixaPrismaRepository.toDomain/fromDomain', () => {
     const result = await repo.abrirSessao(opened);
 
     expect(result.isFailure).toBe(true);
-    expect(result.errors).toContain(CaixaError.CASH_SESSION_ALREADY_OPEN);
+    expect(result.errors).toContain(CaixaError.CAIXA_JA_ABERTO);
   });
 
   test('registrarMovimentacao persists transactionally and maps back', async () => {
@@ -133,9 +130,9 @@ describe('CaixaPrismaRepository.toDomain/fromDomain', () => {
     expect(result.isOk).toBe(true);
     expect(result.instance.valor).toBe(5000);
     expect(result.instance.tipo).toBe(TipoMovimentacaoCaixa.SANGRIA);
-    expect(movimentacaoCaixa.create.mock.calls[0][0].data.valor.toFixed(2)).toBe(
-      '50.00',
-    );
+    expect(
+      movimentacaoCaixa.create.mock.calls[0][0].data.valor.toFixed(2),
+    ).toBe('50.00');
   });
 });
 
@@ -145,7 +142,7 @@ describe('CaixaPortService.registrarVenda', () => {
       findUnique: jest.fn().mockResolvedValue({
         id: SESSAO_ID,
         operadorId: OPERADOR_ID,
-        status: StatusSessaoCaixa.ABERTO,
+        status: StatusSessaoCaixa.ABERTA,
         valorAbertura: new Prisma.Decimal('100.00'),
         valorFechamento: null,
         abertaEm: new Date(),
@@ -177,12 +174,12 @@ describe('CaixaPortService.registrarVenda', () => {
     expect(data.sessaoId).toBe(SESSAO_ID);
   });
 
-  test('fails with CASH_SESSION_ALREADY_CLOSED on a closed session', async () => {
+  test('fails with CAIXA_JA_FECHADO on a closed session', async () => {
     const sessaoCaixa = {
       findUnique: jest.fn().mockResolvedValue({
         id: SESSAO_ID,
         operadorId: OPERADOR_ID,
-        status: StatusSessaoCaixa.FECHADO,
+        status: StatusSessaoCaixa.FECHADA,
         valorAbertura: new Prisma.Decimal('100.00'),
         valorFechamento: new Prisma.Decimal('100.00'),
         abertaEm: new Date(),
@@ -206,7 +203,7 @@ describe('CaixaPortService.registrarVenda', () => {
     const result = await port.registrarVenda(SESSAO_ID, 2500);
 
     expect(result.isFailure).toBe(true);
-    expect(result.errors).toContain(CaixaError.CASH_SESSION_ALREADY_CLOSED);
+    expect(result.errors).toContain(CaixaError.CAIXA_JA_FECHADO);
     expect(movimentacaoCaixa.create).not.toHaveBeenCalled();
   });
 });

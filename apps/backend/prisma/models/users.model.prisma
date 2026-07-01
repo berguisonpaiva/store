@@ -3,7 +3,6 @@
 // email is only a redundant safety net — uniqueness is enforced in the domain.
 
 enum UserRole {
-  MASTER
   ADMIN
   OPERADOR
 }

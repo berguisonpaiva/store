@@ -13,8 +13,6 @@ class _MockGetBalance extends Mock implements GetBalanceUseCase {}
 const _balance = StockBalanceEntity(
   variacaoId: 'v1',
   saldoAtual: 10,
-  quantidadeReservada: 2,
-  saldoDisponivel: 8,
   estoqueMinimo: 3,
 );
 

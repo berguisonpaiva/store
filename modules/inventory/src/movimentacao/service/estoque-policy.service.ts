@@ -23,23 +23,6 @@ export class EstoquePolicyService {
     return Result.ok()
   }
 
-  static assertSaldoDisponivel(
-    saldoAtual: number,
-    quantidadeReservada: number,
-    quantidade: number,
-  ): Result<void> {
-    const validQuantity = QuantidadeMovimentada.tryCreate(quantidade)
-    if (validQuantity.isFailure) {
-      return validQuantity.withFail
-    }
-
-    if (saldoAtual - quantidadeReservada < validQuantity.instance.value) {
-      return Result.fail(EstoqueError.ESTOQUE_INSUFICIENTE)
-    }
-
-    return Result.ok()
-  }
-
   static calculateAdjustment(saldoAtual: number, novoSaldo: number): Result<AjusteSaldoCalculado> {
     const validTargetBalance = Saldo.tryCreate(novoSaldo)
     if (validTargetBalance.isFailure) {

@@ -1,23 +1,16 @@
 import {
   Body,
   Controller,
-  ForbiddenException,
   Get,
-  HttpCode,
   Param,
   Patch,
   Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   ActivateUser,
-  ChangePassword,
   CreateUser,
   DeactivateUser,
   FindUserById,
@@ -32,7 +25,6 @@ import { RolesGuard } from '../../shared/auth/roles.guard';
 import { unwrap } from '../../shared/errors/domain-error.mapper';
 import { CreateUserHttpDto } from './dto/create-user.http.dto';
 import { UpdateUserHttpDto } from './dto/update-user.http.dto';
-import { ChangePasswordHttpDto } from './dto/change-password.http.dto';
 import { ListUsersQueryDto } from './dto/list-users.query.dto';
 
 @ApiTags('users')
@@ -45,14 +37,13 @@ export class UsersController {
     private readonly updateUser: UpdateUser,
     private readonly activateUser: ActivateUser,
     private readonly deactivateUser: DeactivateUser,
-    private readonly changePassword: ChangePassword,
     private readonly findUserById: FindUserById,
     private readonly listUsers: ListUsers,
   ) {}
 
   @Post()
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Create a staff user (MASTER/ADMIN only)' })
+  @Papeis(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Create a staff user (ADMIN only)' })
   async create(
     @CurrentUser('role') actorRole: UserRole,
     @Body() dto: CreateUserHttpDto,
@@ -70,8 +61,8 @@ export class UsersController {
   }
 
   @Patch(':id')
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Edit a user (MASTER/ADMIN only)' })
+  @Papeis(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Edit a user (ADMIN only)' })
   async update(
     @CurrentUser('role') actorRole: UserRole,
     @Param('id') id: string,
@@ -89,8 +80,8 @@ export class UsersController {
   }
 
   @Patch(':id/activate')
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Activate a user (MASTER/ADMIN only)' })
+  @Papeis(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Activate a user (ADMIN only)' })
   async activate(
     @CurrentUser('role') actorRole: UserRole,
     @Param('id') id: string,
@@ -99,37 +90,24 @@ export class UsersController {
   }
 
   @Patch(':id/deactivate')
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Deactivate a user (blocks the last active MASTER)' })
+  @Papeis(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Deactivate a user (cannot deactivate self)' })
   async deactivate(
     @CurrentUser('role') actorRole: UserRole,
+    @CurrentUser('id') requesterId: string,
     @Param('id') id: string,
   ) {
-    return unwrap(await this.deactivateUser.execute({ actorRole, id }));
-  }
-
-  @Patch(':id/password')
-  @HttpCode(204)
-  @ApiOperation({ summary: 'Change your own password' })
-  async password(
-    @CurrentUser('id') currentUserId: string,
-    @Param('id') id: string,
-    @Body() dto: ChangePasswordHttpDto,
-  ) {
-    if (id !== currentUserId) {
-      throw new ForbiddenException('OPERATION_NOT_ALLOWED_FOR_ROLE');
-    }
-    unwrap(
-      await this.changePassword.execute({
-        id,
-        currentPassword: dto.currentPassword,
-        newPassword: dto.newPassword,
+    return unwrap(
+      await this.deactivateUser.execute({
+        actorRole,
+        userId: id,
+        requesterId,
       }),
     );
   }
 
   @Get()
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
+  @Papeis(UserRole.ADMIN)
   @ApiOperation({ summary: 'List users (paginated, filter by role/active)' })
   async list(@Query() query: ListUsersQueryDto) {
     return unwrap(
@@ -143,8 +121,8 @@ export class UsersController {
   }
 
   @Get(':id')
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Fetch a user by id' })
+  @Papeis(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Fetch a user by id (ADMIN only)' })
   async findById(@Param('id') id: string) {
     return unwrap(await this.findUserById.execute({ id }));
   }

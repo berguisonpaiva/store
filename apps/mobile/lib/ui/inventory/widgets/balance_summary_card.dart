@@ -4,7 +4,7 @@ import '../../../domain/inventory/entities/stock_balance_entity.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../theme/app_spacing.dart';
 
-/// Card summarizing a variation's current/available/reserved/minimum balance.
+/// Card summarizing a variation's current and minimum balance.
 class BalanceSummaryCard extends StatelessWidget {
   const BalanceSummaryCard({super.key, required this.balance});
 
@@ -44,14 +44,6 @@ class BalanceSummaryCard extends StatelessWidget {
               style: theme.textTheme.bodyMedium,
             ),
             const Divider(height: AppSpacing.lg),
-            _MetricRow(
-              label: l10n.inventoryAvailableBalance,
-              value: '${balance.saldoDisponivel}',
-            ),
-            _MetricRow(
-              label: l10n.inventoryReserved,
-              value: '${balance.quantidadeReservada}',
-            ),
             _MetricRow(
               label: l10n.inventoryMinimum,
               value: '${balance.estoqueMinimo}',

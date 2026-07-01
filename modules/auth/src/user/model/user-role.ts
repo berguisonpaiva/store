@@ -1,6 +1,5 @@
-/// Staff roles. OPERADOR sells and operates the cash register.
+/// Staff roles. ADMIN manages users; OPERADOR sells and operates the cash register.
 export enum UserRole {
-  MASTER = 'MASTER',
   ADMIN = 'ADMIN',
   OPERADOR = 'OPERADOR',
 }

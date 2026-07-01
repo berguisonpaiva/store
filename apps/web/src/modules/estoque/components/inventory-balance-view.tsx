@@ -48,7 +48,7 @@ export function InventoryBalanceView({
       {embedded ? null : (
         <PageSectionHeader
           title="Consultar saldo"
-          subtitle="Selecione uma variacao para visualizar saldo atual, reservado e disponivel."
+          subtitle="Selecione uma variacao para visualizar o saldo atual e o estoque minimo."
         />
       )}
 
@@ -75,14 +75,10 @@ export function InventoryBalanceView({
           />
         </Card>
       ) : resolvedBalance ? (
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2">
           <Card className="p-5">
             <p className="mb-2 text-sm text-muted-foreground">Saldo atual</p>
             <ReadonlyTextField value={resolvedBalance.saldoAtual} />
-          </Card>
-          <Card className="p-5">
-            <p className="mb-2 text-sm text-muted-foreground">Saldo disponivel</p>
-            <ReadonlyTextField value={resolvedBalance.saldoDisponivel} />
           </Card>
           <Card className="p-5">
             <p className="mb-2 text-sm text-muted-foreground">Estoque minimo</p>

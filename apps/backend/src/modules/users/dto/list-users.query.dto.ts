@@ -23,7 +23,9 @@ export class ListUsersQueryDto {
 
   @ApiPropertyOptional({ type: Boolean })
   @IsOptional()
-  @Transform(({ value }) => (value === undefined ? undefined : value === 'true' || value === true))
+  @Transform(({ value }) =>
+    value === undefined ? undefined : value === 'true' || value === true,
+  )
   @IsBoolean()
   active?: boolean;
 }

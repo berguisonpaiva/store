@@ -1,3 +1,4 @@
+import { CategoryError } from '../../src/category'
 import { CreateProduct, ProductError } from '../../src/product'
 import { buildCategory } from '../mock/category-builder'
 import { InMemoryCategoryRepository } from '../mock/in-memory-category.repository'
@@ -37,7 +38,7 @@ describe('CreateProduct', () => {
     expect(result.errors).toContain(ProductError.PRODUCT_MUST_HAVE_VARIATION)
   })
 
-  test('rejects an unknown category with CATEGORY_NOT_FOUND_FOR_PRODUCT', async () => {
+  test('rejects an unknown category with CATEGORY_NOT_FOUND', async () => {
     const { useCase } = makeUseCase()
 
     const result = await useCase.execute({
@@ -46,10 +47,21 @@ describe('CreateProduct', () => {
     })
 
     expect(result.isFailure).toBe(true)
-    expect(result.errors).toContain(ProductError.CATEGORY_NOT_FOUND_FOR_PRODUCT)
+    expect(result.errors).toContain(CategoryError.CATEGORY_NOT_FOUND)
   })
 
-  test('accepts an existing category', async () => {
+  test('rejects an inactive category with CATEGORY_INACTIVE', async () => {
+    const { categories, useCase } = makeUseCase()
+    const category = buildCategory({ active: false })
+    await categories.create(category)
+
+    const result = await useCase.execute({ ...validInput, categoryId: category.id })
+
+    expect(result.isFailure).toBe(true)
+    expect(result.errors).toContain(CategoryError.CATEGORY_INACTIVE)
+  })
+
+  test('accepts an existing active category', async () => {
     const { categories, useCase } = makeUseCase()
     const category = buildCategory()
     await categories.create(category)
@@ -104,7 +116,7 @@ describe('CreateProduct', () => {
     expect(result.errors).toContain(ProductError.SKU_ALREADY_IN_USE)
   })
 
-  test('rejects a price <= 0', async () => {
+  test('rejects a price <= 0 with a failed Result (InvalidPrice)', async () => {
     const { useCase } = makeUseCase()
 
     const result = await useCase.execute({
@@ -113,5 +125,6 @@ describe('CreateProduct', () => {
     })
 
     expect(result.isFailure).toBe(true)
+    expect(result.errors).toContain(ProductError.INVALID_PRICE)
   })
 })

@@ -1,4 +1,4 @@
-import { Variation } from '../../src/product'
+import { ProductError, Variation } from '../../src/product'
 import { buildVariationProps } from '../mock/product-builder'
 
 describe('Variation entity', () => {
@@ -10,8 +10,10 @@ describe('Variation entity', () => {
     expect(result.instance.active).toBe(true)
   })
 
-  test('rejects a price <= 0', () => {
-    expect(Variation.tryCreate(buildVariationProps({ price: 0 })).isFailure).toBe(true)
+  test('rejects a price <= 0 with a failed Result (InvalidPrice)', () => {
+    const zero = Variation.tryCreate(buildVariationProps({ price: 0 }))
+    expect(zero.isFailure).toBe(true)
+    expect(zero.errors).toContain(ProductError.INVALID_PRICE)
     expect(Variation.tryCreate(buildVariationProps({ price: -100 })).isFailure).toBe(true)
   })
 

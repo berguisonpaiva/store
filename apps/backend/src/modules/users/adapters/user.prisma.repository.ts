@@ -23,17 +23,14 @@ type UserRow = Prisma.UserGetPayload<{ include: { password: true } }>;
 export class UserPrismaRepository implements UserRepository, UserReader {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(
-    entity: User,
-    tx?: TransactionContext,
-  ): Promise<Result<void>> {
+  async create(entity: User, tx?: TransactionContext): Promise<Result<void>> {
     const run = async (client: Prisma.TransactionClient) => {
       await client.user.create({
         data: {
           id: entity.id,
           name: entity.name,
           email: entity.email,
-          role: entity.role as UserRole,
+          role: entity.role,
           active: entity.active,
         },
       });
@@ -50,17 +47,14 @@ export class UserPrismaRepository implements UserRepository, UserReader {
     }
   }
 
-  async update(
-    entity: User,
-    tx?: TransactionContext,
-  ): Promise<Result<void>> {
+  async update(entity: User, tx?: TransactionContext): Promise<Result<void>> {
     const run = async (client: Prisma.TransactionClient) => {
       await client.user.update({
         where: { id: entity.id },
         data: {
           name: entity.name,
           email: entity.email,
-          role: entity.role as UserRole,
+          role: entity.role,
           active: entity.active,
         },
       });
@@ -101,13 +95,6 @@ export class UserPrismaRepository implements UserRepository, UserReader {
     });
     if (!row) return Result.ok(null);
     return this.toDomain(row);
-  }
-
-  async countActiveByRole(role: UserRole): Promise<Result<number>> {
-    const count = await this.prisma.client.user.count({
-      where: { active: true, role: role as UserRole },
-    });
-    return Result.ok(count);
   }
 
   private toDomain(row: UserRow): Result<User> {

@@ -25,6 +25,7 @@ import {
 } from '../data/product.actions';
 import {
   BARCODE_FIELD_CODE,
+  CATEGORY_FIELD_CODES,
   messageForCode,
   SKU_FIELD_CODE,
 } from '../data/error-messages';
@@ -124,6 +125,10 @@ export function ProductForm({
       finishSuccess('Produto criado.');
       return;
     }
+    // A missing/inactive category is attributable to the category selector.
+    if (CATEGORY_FIELD_CODES.includes(result.code)) {
+      setError('categoryId', { message: messageForCode(result.code) });
+    }
     // On bulk create a duplicate SKU/barcode is not attributable to a row.
     toast.error(messageForCode(result.code));
   }
@@ -136,6 +141,9 @@ export function ProductForm({
       categoryId: values.categoryId || null,
     });
     if (!profile.ok) {
+      if (CATEGORY_FIELD_CODES.includes(profile.code)) {
+        setError('categoryId', { message: messageForCode(profile.code) });
+      }
       toast.error(messageForCode(profile.code));
       return;
     }
@@ -252,6 +260,11 @@ export function ProductForm({
                 />
               )}
             />
+            {errors.categoryId && (
+              <FormErrorMessage className="mt-1.5">
+                {errors.categoryId.message}
+              </FormErrorMessage>
+            )}
           </div>
         </div>
       </Card>

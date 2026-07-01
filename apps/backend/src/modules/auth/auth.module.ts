@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Login, RefreshToken, ValidateToken } from '@repo/auth';
+import { GetCurrentUser, Login, RefreshToken, ValidateToken } from '@repo/auth';
 import { BcryptHashComparer } from '../../shared/crypto/bcrypt-hash-comparer';
 import { UsersModule } from '../users/users.module';
 import { UserPrismaRepository } from '../users/adapters/user.prisma.repository';
@@ -36,6 +36,11 @@ import { JwtTokenService } from './adapters/jwt-token-service';
       provide: ValidateToken,
       useFactory: (tokens: JwtTokenService) => new ValidateToken(tokens),
       inject: [JwtTokenService],
+    },
+    {
+      provide: GetCurrentUser,
+      useFactory: (repo: UserPrismaRepository) => new GetCurrentUser(repo),
+      inject: [UserPrismaRepository],
     },
   ],
 })

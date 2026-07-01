@@ -15,7 +15,10 @@ export class SessaoOutDTO {
   @ApiProperty({ description: 'Opening amount in reais' })
   valorAbertura!: number;
 
-  @ApiProperty({ nullable: true, description: 'Counted amount in reais (null while open)' })
+  @ApiProperty({
+    nullable: true,
+    description: 'Counted amount in reais (null while open)',
+  })
   valorFechamento!: number | null;
 
   @ApiProperty({ type: String, format: 'date-time' })
@@ -39,14 +42,65 @@ export class ResumoSessaoOutDTO {
   @ApiProperty()
   sangrias!: number;
 
-  @ApiProperty({ description: 'esperado = abertura + suprimentos + vendasDinheiro - sangrias' })
+  @ApiProperty({
+    description:
+      'esperado = abertura + suprimentos + vendasDinheiro - sangrias',
+  })
   esperado!: number;
 
-  @ApiProperty({ nullable: true, description: 'Counted amount (present once closed)' })
+  @ApiProperty({
+    nullable: true,
+    description: 'Counted amount (present once closed)',
+  })
   contado?: number | null;
 
-  @ApiProperty({ nullable: true, description: 'contado - esperado (present once closed)' })
+  @ApiProperty({
+    nullable: true,
+    description: 'contado - esperado (present once closed)',
+  })
   divergencia?: number | null;
+
+  @ApiProperty({ description: 'RN05: total of concluded sales in reais' })
+  totalVendas!: number;
+
+  @ApiProperty({ description: 'RN05: count of concluded sales' })
+  qtdVendas!: number;
+
+  @ApiProperty({
+    description:
+      'RN05: total per payment form (reais), keyed by FormaPagamento',
+    type: 'object',
+    additionalProperties: { type: 'number' },
+  })
+  totalPorForma!: Record<string, number>;
+}
+
+/// RN05 close resumo — totals computed automatically at fechar-caixa. Money in reais.
+export class ResumoFechamentoOutDTO {
+  @ApiProperty({ description: 'Total of concluded sales in reais' })
+  totalVendas!: number;
+
+  @ApiProperty({ description: 'Count of concluded sales' })
+  qtdVendas!: number;
+
+  @ApiProperty({
+    description: 'Total per payment form (reais), keyed by FormaPagamento',
+    type: 'object',
+    additionalProperties: { type: 'number' },
+  })
+  totalPorForma!: Record<string, number>;
+
+  @ApiProperty()
+  sangrias!: number;
+
+  @ApiProperty()
+  suprimentos!: number;
+
+  @ApiProperty({
+    description:
+      'saldoEsperado = abertura + suprimentos + vendasDinheiro - sangrias',
+  })
+  saldoEsperado!: number;
 }
 
 /// HTTP response shape returned when a session is closed. Money in reais.
@@ -54,7 +108,10 @@ export class FecharCaixaOutDTO {
   @ApiProperty({ format: 'uuid' })
   sessaoId!: string;
 
-  @ApiProperty({ description: 'esperado = abertura + suprimentos + vendasDinheiro - sangrias' })
+  @ApiProperty({
+    description:
+      'esperado = abertura + suprimentos + vendasDinheiro - sangrias',
+  })
   esperado!: number;
 
   @ApiProperty({ description: 'Counted amount in reais' })
@@ -62,6 +119,12 @@ export class FecharCaixaOutDTO {
 
   @ApiProperty({ description: 'contado - esperado' })
   divergencia!: number;
+
+  @ApiProperty({
+    description: 'RN05 automatic close resumo',
+    type: ResumoFechamentoOutDTO,
+  })
+  resumo!: ResumoFechamentoOutDTO;
 }
 
 /// HTTP response shape for a cash movement. Money is exposed in reais (number).

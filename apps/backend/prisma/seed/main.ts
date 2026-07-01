@@ -6,39 +6,47 @@ import { PrismaClient } from '@prisma/client';
 
 type SeedTask = (prisma: PrismaClient) => Promise<void>;
 
-/// Creates an initial active MASTER user so the API is usable on first run.
-/// Idempotent: skips if the email already exists.
-const seedMaster: SeedTask = async (prisma) => {
-  const email = (process.env.SEED_MASTER_EMAIL ?? 'master@store.local')
+/// Creates an initial active ADMIN user so the API is usable on first run.
+/// Idempotent: if the email already exists, ensures it is an active ADMIN.
+const seedAdmin: SeedTask = async (prisma) => {
+  const email = (process.env.SEED_ADMIN_EMAIL ?? 'admin@store.local')
     .trim()
     .toLowerCase();
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
-    console.log(`[seed] MASTER already exists: ${email}`);
+    if (existing.role !== 'ADMIN' || !existing.active) {
+      await prisma.user.update({
+        where: { id: existing.id },
+        data: { role: 'ADMIN', active: true },
+      });
+      console.log(`[seed] ADMIN reconciled: ${email}`);
+      return;
+    }
+    console.log(`[seed] ADMIN already exists: ${email}`);
     return;
   }
 
   const hash = await bcrypt.hash(
-    process.env.SEED_MASTER_PASSWORD ?? 'Master!123',
+    process.env.SEED_ADMIN_PASSWORD ?? 'Admin!123',
     10,
   );
 
   await prisma.user.create({
     data: {
       id: randomUUID(),
-      name: process.env.SEED_MASTER_NAME ?? 'Master Admin',
+      name: process.env.SEED_ADMIN_NAME ?? 'Admin',
       email,
-      role: 'MASTER',
+      role: 'ADMIN',
       active: true,
       password: { create: { hash } },
     },
   });
 
-  console.log(`[seed] created MASTER: ${email}`);
+  console.log(`[seed] created ADMIN: ${email}`);
 };
 
-const seedTasks: SeedTask[] = [seedMaster];
+const seedTasks: SeedTask[] = [seedAdmin];
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL ?? '',

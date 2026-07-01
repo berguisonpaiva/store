@@ -29,16 +29,20 @@ export class InventoryQueriesController {
   ) {}
 
   @Get('variations/:variacaoId/balance')
-  @Papeis(UserRole.MASTER, UserRole.ADMIN, UserRole.OPERADOR)
-  @ApiOperation({ summary: 'Fetch current and available balance for a variation' })
+  @Papeis(UserRole.ADMIN, UserRole.OPERADOR)
+  @ApiOperation({
+    summary: 'Fetch current balance and minimum for a variation',
+  })
   @ApiOkResponse({ description: 'Balance returned' })
   async getBalance(@Param('variacaoId') variacaoId: string) {
     return unwrap(await this.consultarSaldo.execute({ variacaoId }));
   }
 
   @Get('variations/:variacaoId/movements')
-  @Papeis(UserRole.MASTER, UserRole.ADMIN, UserRole.OPERADOR)
-  @ApiOperation({ summary: 'List variation movements with pagination and period filter' })
+  @Papeis(UserRole.ADMIN, UserRole.OPERADOR)
+  @ApiOperation({
+    summary: 'List variation movements with pagination and period filter',
+  })
   @ApiOkResponse({ description: 'Movements returned' })
   async listMovements(
     @Param('variacaoId') variacaoId: string,
@@ -56,7 +60,7 @@ export class InventoryQueriesController {
   }
 
   @Get('low-stock')
-  @Papeis(UserRole.MASTER, UserRole.ADMIN)
+  @Papeis(UserRole.ADMIN)
   @ApiOperation({ summary: 'List variations below minimum stock' })
   @ApiOkResponse({ description: 'Low-stock variations returned' })
   async listLowStock() {

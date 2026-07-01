@@ -12,7 +12,7 @@ describe('UniqueCategoryNameSpecification', () => {
     const result = UniqueCategoryNameSpecification.ensureUnique(existing)
 
     expect(result.isFailure).toBe(true)
-    expect(result.errors).toContain(CategoryError.CATEGORY_NAME_ALREADY_IN_USE)
+    expect(result.errors).toContain(CategoryError.CATEGORY_ALREADY_EXISTS)
   })
 
   test('passes when the match is the same category being edited', () => {

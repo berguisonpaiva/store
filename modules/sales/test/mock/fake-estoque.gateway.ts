@@ -5,14 +5,26 @@ export class FakeEstoqueGateway implements EstoqueGateway {
   /// Variations that lack balance: validarSaldoDisponivel fails for these.
   readonly semSaldo = new Set<string>()
 
+  /// Available balance per variation. When a variation has a seeded balance,
+  /// `validarSaldoDisponivel` fails once the requested quantity exceeds it.
+  readonly saldoDisponivel = new Map<string, number>()
+
   failDarBaixaWith: string | null = null
   failEstornarWith: string | null = null
 
   readonly baixas: Array<{ variacaoId: string; quantidade: number; origemVendaId: string }> = []
   readonly estornos: Array<{ variacaoId: string; quantidade: number; origemVendaId: string }> = []
 
-  async validarSaldoDisponivel(variacaoId: string, _quantidade: number): Promise<Result<void>> {
+  /// Last transaction context seen by `darBaixa`/`estornar`. Lets tests assert
+  /// stock and cash ran on the SAME `tx` (RN09).
+  lastTx: TransactionContext | undefined
+
+  async validarSaldoDisponivel(variacaoId: string, quantidade: number): Promise<Result<void>> {
     if (this.semSaldo.has(variacaoId)) {
+      return Result.fail('INSUFFICIENT_STOCK')
+    }
+    const saldo = this.saldoDisponivel.get(variacaoId)
+    if (saldo !== undefined && quantidade > saldo) {
       return Result.fail('INSUFFICIENT_STOCK')
     }
     return Result.ok()
@@ -22,8 +34,10 @@ export class FakeEstoqueGateway implements EstoqueGateway {
     variacaoId: string,
     quantidade: number,
     origemVendaId: string,
-    _tx?: TransactionContext,
+    _usuarioId: string,
+    tx?: TransactionContext,
   ): Promise<Result<void>> {
+    this.lastTx = tx
     if (this.failDarBaixaWith) {
       return Result.fail(this.failDarBaixaWith)
     }
@@ -35,8 +49,10 @@ export class FakeEstoqueGateway implements EstoqueGateway {
     variacaoId: string,
     quantidade: number,
     origemVendaId: string,
-    _tx?: TransactionContext,
+    _usuarioId: string,
+    tx?: TransactionContext,
   ): Promise<Result<void>> {
+    this.lastTx = tx
     if (this.failEstornarWith) {
       return Result.fail(this.failEstornarWith)
     }
@@ -46,6 +62,11 @@ export class FakeEstoqueGateway implements EstoqueGateway {
 
   semSaldoPara(variacaoId: string): this {
     this.semSaldo.add(variacaoId)
+    return this
+  }
+
+  comSaldo(variacaoId: string, quantidade: number): this {
+    this.saldoDisponivel.set(variacaoId, quantidade)
     return this
   }
 }

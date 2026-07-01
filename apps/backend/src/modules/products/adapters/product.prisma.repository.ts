@@ -24,7 +24,10 @@ type ProductRow = Prisma.ProductGetPayload<{ include: { variations: true } }>;
 export class ProductPrismaRepository implements ProductsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(entity: Product, tx?: TransactionContext): Promise<Result<void>> {
+  async create(
+    entity: Product,
+    tx?: TransactionContext,
+  ): Promise<Result<void>> {
     const run = async (client: Prisma.TransactionClient) => {
       await client.product.create({
         data: {
@@ -41,7 +44,7 @@ export class ProductPrismaRepository implements ProductsRepository {
           productId: entity.id,
           sku: variation.sku,
           barcode: variation.barcode,
-          attributes: variation.attributes as Prisma.InputJsonValue,
+          attributes: variation.attributes,
           priceCents: variation.price,
           minStock: variation.minStock,
           active: variation.active,
@@ -57,7 +60,10 @@ export class ProductPrismaRepository implements ProductsRepository {
     }
   }
 
-  async update(entity: Product, tx?: TransactionContext): Promise<Result<void>> {
+  async update(
+    entity: Product,
+    tx?: TransactionContext,
+  ): Promise<Result<void>> {
     const run = async (client: Prisma.TransactionClient) => {
       await client.product.update({
         where: { id: entity.id },
@@ -78,7 +84,7 @@ export class ProductPrismaRepository implements ProductsRepository {
             productId: entity.id,
             sku: variation.sku,
             barcode: variation.barcode,
-            attributes: variation.attributes as Prisma.InputJsonValue,
+            attributes: variation.attributes,
             priceCents: variation.price,
             minStock: variation.minStock,
             active: variation.active,
@@ -86,7 +92,7 @@ export class ProductPrismaRepository implements ProductsRepository {
           update: {
             sku: variation.sku,
             barcode: variation.barcode,
-            attributes: variation.attributes as Prisma.InputJsonValue,
+            attributes: variation.attributes,
             priceCents: variation.price,
             minStock: variation.minStock,
             active: variation.active,

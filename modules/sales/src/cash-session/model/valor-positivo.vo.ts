@@ -21,7 +21,7 @@ export class ValorPositivo extends ValueObject<number, ValueObjectConfig> {
 
   static tryCreate(value: number, config?: ValueObjectConfig): Result<ValorPositivo> {
     if (typeof value !== 'number' || !Number.isFinite(value) || !Number.isInteger(value) || value <= 0) {
-      return Result.fail(CaixaError.VALOR_MOVIMENTACAO_INVALIDO)
+      return Result.fail(CaixaError.VALOR_INVALIDO)
     }
 
     return Result.ok(new ValorPositivo(value, config))

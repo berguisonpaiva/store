@@ -1,4 +1,4 @@
 export enum StatusSessaoCaixa {
-  ABERTO = 'ABERTO',
-  FECHADO = 'FECHADO',
+  ABERTA = 'ABERTA',
+  FECHADA = 'FECHADA',
 }

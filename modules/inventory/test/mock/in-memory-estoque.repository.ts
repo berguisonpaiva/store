@@ -1,5 +1,6 @@
 import { Result } from '@repo/shared'
 import {
+  AplicarMovimentacaoOptions,
   EstoqueRepository,
   EstoqueSaldo,
   MovimentacaoEstoque,
@@ -10,6 +11,7 @@ export class InMemoryEstoqueRepository implements EstoqueRepository {
   readonly movimentacoes: MovimentacaoEstoque[] = []
   failApplyWith: string | null = null
   rollbackAfterMovement = false
+  lastOptions: AplicarMovimentacaoOptions | undefined
 
   async findSaldoByVariacaoId(variacaoId: string): Promise<Result<EstoqueSaldo | null>> {
     return Result.ok(this.saldos.get(variacaoId) ?? null)
@@ -18,7 +20,10 @@ export class InMemoryEstoqueRepository implements EstoqueRepository {
   async aplicarMovimentacao(
     movimentacao: MovimentacaoEstoque,
     novoSaldo: EstoqueSaldo,
+    options?: AplicarMovimentacaoOptions,
   ): Promise<Result<void>> {
+    this.lastOptions = options
+
     if (this.failApplyWith) {
       return Result.fail(this.failApplyWith)
     }
