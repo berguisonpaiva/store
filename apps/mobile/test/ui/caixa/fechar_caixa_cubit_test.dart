@@ -83,7 +83,7 @@ void main() {
   );
 
   blocTest<FecharCaixaCubit, FecharCaixaState>(
-    'submit pending sale → submitting then failure with code',
+    'submit pending sale → explicit pendingSale state (not a generic failure)',
     setUp: () => when(
       () => fecharCaixa(
         sessaoId: any(named: 'sessaoId'),
@@ -100,8 +100,33 @@ void main() {
       isA<FecharCaixaState>()
           .having((s) => s.status, 'status', FecharCaixaStatus.submitting),
       isA<FecharCaixaState>()
-          .having((s) => s.status, 'status', FecharCaixaStatus.failure)
+          .having((s) => s.status, 'status', FecharCaixaStatus.pendingSale)
+          .having((s) => s.isBlockedByPendingSale, 'isBlockedByPendingSale',
+              isTrue)
           .having((s) => s.errorCode, 'errorCode', 'caixa.pending_sale'),
+    ],
+  );
+
+  blocTest<FecharCaixaCubit, FecharCaixaState>(
+    'other failures still surface as generic failure',
+    setUp: () => when(
+      () => fecharCaixa(
+        sessaoId: any(named: 'sessaoId'),
+        valorFechamentoCents: any(named: 'valorFechamentoCents'),
+      ),
+    ).thenAnswer((_) async => left(const CashSessionAlreadyClosedFailure())),
+    build: build,
+    act: (cubit) async {
+      cubit.contadoChanged(32000);
+      await cubit.submit(sessaoId: 's1');
+    },
+    expect: () => [
+      isA<FecharCaixaState>().having((s) => s.contadoCents, 'contado', 32000),
+      isA<FecharCaixaState>()
+          .having((s) => s.status, 'status', FecharCaixaStatus.submitting),
+      isA<FecharCaixaState>()
+          .having((s) => s.status, 'status', FecharCaixaStatus.failure)
+          .having((s) => s.errorCode, 'errorCode', 'caixa.already_closed'),
     ],
   );
 }

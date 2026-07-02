@@ -45,6 +45,7 @@ export class Login implements UseCase<LoginInputDTO, LoginOutputDTO> {
       user: {
         id: user!.id,
         name: user!.name,
+        email: user!.email,
         role: user!.role,
       },
     })

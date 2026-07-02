@@ -1,4 +1,4 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
   IsEnum,
@@ -58,3 +58,10 @@ export class ListarSessoesQueryDto {
   @IsISO8601()
   to?: string;
 }
+
+/// `GET /caixa/minhas` query string. Same filters as the ADMIN list, minus
+/// `usuarioId` — the scope is ALWAYS the authenticated caller.
+export class ListarMinhasSessoesQueryDto extends OmitType(
+  ListarSessoesQueryDto,
+  ['usuarioId'] as const,
+) {}

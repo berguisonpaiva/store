@@ -10,8 +10,10 @@ import 'package:mobile/domain/caixa/repositories/caixa_repository.dart';
 import 'package:mobile/domain/caixa/usecases/abrir_caixa_usecase.dart';
 import 'package:mobile/domain/caixa/usecases/fechar_caixa_usecase.dart';
 import 'package:mobile/domain/caixa/usecases/listar_movimentacoes_usecase.dart';
+import 'package:mobile/domain/caixa/usecases/listar_sessoes_usecase.dart';
 import 'package:mobile/domain/caixa/usecases/obter_caixa_aberto_usecase.dart';
 import 'package:mobile/domain/caixa/usecases/obter_resumo_sessao_usecase.dart';
+import 'package:mobile/domain/caixa/usecases/obter_sessao_usecase.dart';
 import 'package:mobile/domain/caixa/usecases/registrar_sangria_usecase.dart';
 import 'package:mobile/domain/caixa/usecases/registrar_suprimento_usecase.dart';
 
@@ -26,7 +28,12 @@ class _FakeCaixaRepository implements CaixaRepository {
   Either<CaixaFailure, ResumoSessaoEntity> resumoResult = right(_resumo);
   Either<CaixaFailure, List<MovimentacaoCaixaEntity>> movimentacoesResult =
       right([_movement]);
+  Either<CaixaFailure, List<SessaoCaixaEntity>> sessoesResult =
+      right([_session]);
+  Either<CaixaFailure, SessaoCaixaEntity> sessaoResult = right(_session);
 
+  SessoesCaixaFiltro? lastSessoesFiltro;
+  String? lastSessaoId;
   int? lastValorAberturaCents;
   int? lastValorFechamentoCents;
   String? lastObservacao;
@@ -80,6 +87,22 @@ class _FakeCaixaRepository implements CaixaRepository {
   @override
   Future<Either<CaixaFailure, List<MovimentacaoCaixaEntity>>>
   listarMovimentacoes(String sessaoId) async => movimentacoesResult;
+
+  @override
+  Future<Either<CaixaFailure, List<SessaoCaixaEntity>>> listarSessoes(
+    SessoesCaixaFiltro filtro,
+  ) async {
+    lastSessoesFiltro = filtro;
+    return sessoesResult;
+  }
+
+  @override
+  Future<Either<CaixaFailure, SessaoCaixaEntity>> obterSessao(
+    String sessaoId,
+  ) async {
+    lastSessaoId = sessaoId;
+    return sessaoResult;
+  }
 }
 
 final _session = SessaoCaixaEntity(
@@ -227,6 +250,45 @@ void main() {
       repo.abertoResult = left(const CashSessionNotFoundFailure());
       final result = await ObterCaixaAbertoUseCase(repo)();
       expect(result.getLeft().toNullable(), isA<CashSessionNotFoundFailure>());
+    });
+  });
+
+  group('ListarSessoesUseCase', () {
+    test('lists the operator sessions with the default (empty) filter',
+        () async {
+      final result = await ListarSessoesUseCase(repo)();
+      expect(result.getRight().toNullable()!.length, 1);
+      expect(repo.lastSessoesFiltro!.status, isNull);
+    });
+
+    test('forwards the status filter', () async {
+      await ListarSessoesUseCase(repo)(
+        const SessoesCaixaFiltro(status: CashSessionStatus.fechado),
+      );
+      expect(repo.lastSessoesFiltro!.status, CashSessionStatus.fechado);
+    });
+
+    test('propagates failures', () async {
+      repo.sessoesResult = left(const CaixaNetworkFailure());
+      final result = await ListarSessoesUseCase(repo)();
+      expect(result.getLeft().toNullable(), isA<CaixaNetworkFailure>());
+    });
+  });
+
+  group('ObterSessaoUseCase', () {
+    test('returns the session by id', () async {
+      final result = await ObterSessaoUseCase(repo)('s1');
+      expect(result.getRight().toNullable(), _session);
+      expect(repo.lastSessaoId, 's1');
+    });
+
+    test('propagates an access-denied failure (RN03)', () async {
+      repo.sessaoResult = left(const CashSessionAccessDeniedFailure());
+      final result = await ObterSessaoUseCase(repo)('other');
+      expect(
+        result.getLeft().toNullable(),
+        isA<CashSessionAccessDeniedFailure>(),
+      );
     });
   });
 

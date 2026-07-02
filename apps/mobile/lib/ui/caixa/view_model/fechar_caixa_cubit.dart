@@ -1,11 +1,15 @@
 import 'package:bloc/bloc.dart';
 
+import '../../../domain/caixa/errors/caixa_failure.dart';
 import '../../../domain/caixa/usecases/fechar_caixa_usecase.dart';
 import 'fechar_caixa_state.dart';
 
 /// Drives the close-cash form: tracks the counted amount so the view can show
 /// expected/counted/divergence live, and closes the session
-/// (`valorFechamento >= 0`, validated in the use case). No Flutter imports.
+/// (`valorFechamento >= 0`, validated in the use case). A pending sale
+/// (`VENDA_PENDENTE_NO_FECHAMENTO`) becomes the explicit
+/// [FecharCaixaStatus.pendingSale] state, not a generic failure. No Flutter
+/// imports.
 class FecharCaixaCubit extends Cubit<FecharCaixaState> {
   FecharCaixaCubit({
     required FecharCaixaUseCase fecharCaixa,
@@ -37,7 +41,9 @@ class FecharCaixaCubit extends Cubit<FecharCaixaState> {
     result.match(
       (failure) => emit(
         state.copyWith(
-          status: FecharCaixaStatus.failure,
+          status: failure is PendingSaleInSessionFailure
+              ? FecharCaixaStatus.pendingSale
+              : FecharCaixaStatus.failure,
           errorCode: failure.code,
         ),
       ),

@@ -1,9 +1,19 @@
 import 'package:fpdart/fpdart.dart';
 
+import '../entities/cash_session_status.dart';
 import '../entities/movimentacao_caixa_entity.dart';
 import '../entities/resumo_sessao_entity.dart';
 import '../entities/sessao_caixa_entity.dart';
 import '../errors/caixa_failure.dart';
+
+/// Optional filters for listing the operator's own cash sessions.
+class SessoesCaixaFiltro {
+  const SessoesCaixaFiltro({this.status, this.from, this.to});
+
+  final CashSessionStatus? status;
+  final DateTime? from;
+  final DateTime? to;
+}
 
 /// Cash-session contract owned by the domain. Implemented in `data` against the
 /// backend `/caixa/*` endpoints. Business outcomes are returned as
@@ -44,4 +54,12 @@ abstract interface class CaixaRepository {
   /// `GET /caixa/:id/movimentacoes`.
   Future<Either<CaixaFailure, List<MovimentacaoCaixaEntity>>>
   listarMovimentacoes(String sessaoId);
+
+  /// `GET /caixa/minhas` — the operator's own sessions (RN03), newest first.
+  Future<Either<CaixaFailure, List<SessaoCaixaEntity>>> listarSessoes(
+    SessoesCaixaFiltro filtro,
+  );
+
+  /// `GET /caixa/:id` — a single session; the backend denies non-owners (403).
+  Future<Either<CaixaFailure, SessaoCaixaEntity>> obterSessao(String sessaoId);
 }

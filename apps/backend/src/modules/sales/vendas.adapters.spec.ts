@@ -6,6 +6,7 @@ import { PrismaService } from '../../db/prisma.service';
 import { CaixaGatewayAdapter } from './adapters/caixa.gateway.adapter';
 import { EstoqueGatewayAdapter } from './adapters/estoque.gateway.adapter';
 import { centsToDecimal, decimalToCents, reaisToCents } from './adapters/money';
+import { VariacaoPrismaReader } from './adapters/variacao.prisma.reader';
 import { VendasPrismaQuery } from './adapters/vendas.prisma.query';
 import { VendasPrismaRepository } from './adapters/vendas.prisma.repository';
 
@@ -232,6 +233,78 @@ describe('VendasPrismaQuery', () => {
         { forma: FormaPagamento.PIX, total: 3000, quantidade: 1 },
       ],
     });
+  });
+});
+
+describe('VariacaoPrismaReader (VariacaoGateway binding)', () => {
+  function makeReader(row: unknown) {
+    const findUnique = jest.fn().mockResolvedValue(row);
+    const prisma = {
+      client: { variation: { findUnique } },
+    } as unknown as PrismaService;
+    return { reader: new VariacaoPrismaReader(prisma), findUnique };
+  }
+
+  test('buscarParaVenda returns preco in cents and ativa=true for an active variation', async () => {
+    const { reader, findUnique } = makeReader({
+      id: VARIACAO_ID,
+      priceCents: 1500,
+      active: true,
+      product: { active: true },
+    });
+
+    const out = await reader.buscarParaVenda(VARIACAO_ID);
+
+    expect(findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: VARIACAO_ID } }),
+    );
+    expect(out).toEqual({ variacaoId: VARIACAO_ID, preco: 1500, ativa: true });
+  });
+
+  test('buscarParaVenda flags ativa=false when the VARIATION is inactive', async () => {
+    const { reader } = makeReader({
+      id: VARIACAO_ID,
+      priceCents: 1500,
+      active: false,
+      product: { active: true },
+    });
+
+    const out = await reader.buscarParaVenda(VARIACAO_ID);
+
+    expect(out).toEqual({ variacaoId: VARIACAO_ID, preco: 1500, ativa: false });
+  });
+
+  test('buscarParaVenda flags ativa=false when the parent PRODUCT is inactive', async () => {
+    const { reader } = makeReader({
+      id: VARIACAO_ID,
+      priceCents: 1500,
+      active: true,
+      product: { active: false },
+    });
+
+    const out = await reader.buscarParaVenda(VARIACAO_ID);
+
+    expect(out?.ativa).toBe(false);
+  });
+
+  test('buscarParaVenda returns null for an unknown variation', async () => {
+    const { reader } = makeReader(null);
+
+    const out = await reader.buscarParaVenda(VARIACAO_ID);
+
+    expect(out).toBeNull();
+  });
+
+  test('resolver maps sku/codigoBarras to the canonical variacaoId only', async () => {
+    const { reader, findUnique } = makeReader({ id: VARIACAO_ID });
+
+    const out = await reader.resolver({ sku: 'ABC' });
+
+    expect(findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { sku: 'ABC' } }),
+    );
+    // No price/activity here — those are the domain gateway's job (RN10).
+    expect(out).toEqual({ variacaoId: VARIACAO_ID });
   });
 });
 

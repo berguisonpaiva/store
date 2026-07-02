@@ -16,7 +16,6 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiTags,
-  ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 import {
   AbrirCaixa,
@@ -87,9 +86,8 @@ export class CaixaCommandsController {
   @ApiOkResponse({ description: 'Session closed', type: FecharCaixaOutDTO })
   @ApiNotFoundResponse({ description: 'CAIXA_NAO_ENCONTRADO' })
   @ApiForbiddenResponse({ description: 'NAO_E_DONO_DO_CAIXA' })
-  @ApiConflictResponse({ description: 'CAIXA_JA_FECHADO' })
-  @ApiUnprocessableEntityResponse({
-    description: 'VENDA_PENDENTE_NO_FECHAMENTO',
+  @ApiConflictResponse({
+    description: 'CAIXA_JA_FECHADO or VENDA_PENDENTE_NO_FECHAMENTO',
   })
   async fechar(
     @CurrentUser('id') usuarioId: string,

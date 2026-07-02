@@ -19,6 +19,9 @@ export class LoginUserDto {
   @ApiProperty()
   name!: string;
 
+  @ApiProperty({ format: 'email' })
+  email!: string;
+
   @ApiProperty({ enum: UserRole })
   role!: UserRole;
 }

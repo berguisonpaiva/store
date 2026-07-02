@@ -25,7 +25,7 @@ export class ListarMovimentacoes
     if (!sessao.instance) {
       return Result.fail(CaixaError.CAIXA_NAO_ENCONTRADO)
     }
-    if (input.ator.papel !== PapelCaixa.ADMIN && sessao.instance.operadorId !== input.ator.usuarioId) {
+    if (input.ator.papel !== PapelCaixa.ADMIN && !sessao.instance.pertenceAoUsuario(input.ator.usuarioId)) {
       return Result.fail(CaixaError.ACESSO_NEGADO)
     }
 

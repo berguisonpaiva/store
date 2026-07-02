@@ -90,6 +90,32 @@ class CaixaRepositoryImpl implements CaixaRepository {
     return dtos.map((e) => e.toEntity()).toList();
   });
 
+  @override
+  Future<Either<CaixaFailure, List<SessaoCaixaEntity>>> listarSessoes(
+    SessoesCaixaFiltro filtro,
+  ) => _guard(() async {
+    final dtos = await _remote.listMinhas(_queryFrom(filtro));
+    return dtos.map((e) => e.toEntity()).toList();
+  });
+
+  @override
+  Future<Either<CaixaFailure, SessaoCaixaEntity>> obterSessao(
+    String sessaoId,
+  ) => _guard(() async {
+    final dto = await _remote.getSessao(sessaoId);
+    return dto.toEntity();
+  });
+
+  Map<String, dynamic> _queryFrom(SessoesCaixaFiltro filtro) {
+    final query = <String, dynamic>{};
+    if (filtro.status != null) query['status'] = filtro.status!.wire;
+    if (filtro.from != null) {
+      query['from'] = filtro.from!.toUtc().toIso8601String();
+    }
+    if (filtro.to != null) query['to'] = filtro.to!.toUtc().toIso8601String();
+    return query;
+  }
+
   /// Runs [run], converting any cash/technical exception into a failure.
   Future<Either<CaixaFailure, T>> _guard<T>(Future<T> Function() run) async {
     try {
@@ -108,11 +134,13 @@ class CaixaRepositoryImpl implements CaixaRepository {
       'CAIXA_NAO_ENCONTRADO' => const CashSessionNotFoundFailure(),
       'CAIXA_JA_FECHADO' => const CashSessionAlreadyClosedFailure(),
       'VENDA_PENDENTE_NO_FECHAMENTO' => const PendingSaleInSessionFailure(),
+      'ACESSO_NEGADO' => const CashSessionAccessDeniedFailure(),
       _ => _fallbackByStatus(e.statusCode),
     };
   }
 
   CaixaFailure _fallbackByStatus(int? status) => switch (status) {
+    403 => const CashSessionAccessDeniedFailure(),
     404 => const CashSessionNotFoundFailure(),
     _ => const CaixaNetworkFailure(),
   };

@@ -409,10 +409,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get caixaTypeSangria => 'Withdrawal';
 
   @override
-  String get caixaTypeVendaDinheiro => 'Cash sale';
+  String get caixaTypeVenda => 'Sale';
 
   @override
-  String get caixaTypeFechamento => 'Closing';
+  String get caixaTypeDesconhecido => 'Other';
 
   @override
   String get caixaErrorAlreadyOpen => 'There is already an open cash register.';
@@ -432,6 +432,60 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get caixaErrorNetwork => 'Network error. Please try again.';
+
+  @override
+  String get caixaErrorAccessDenied =>
+      'You do not have access to this cash session.';
+
+  @override
+  String get caixaHistoryTitle => 'Cash register history';
+
+  @override
+  String get caixaHistoryEmpty => 'No cash sessions found.';
+
+  @override
+  String get caixaHistoryFilterAll => 'All';
+
+  @override
+  String get caixaStatusOpenLabel => 'Open';
+
+  @override
+  String get caixaStatusClosedLabel => 'Closed';
+
+  @override
+  String get caixaHistoryDetailTitle => 'Cash session detail';
+
+  @override
+  String get caixaDetailSessionTitle => 'Session';
+
+  @override
+  String get caixaDetailOpenedAt => 'Opened at';
+
+  @override
+  String get caixaDetailClosedAt => 'Closed at';
+
+  @override
+  String get caixaDetailClosingAmount => 'Closing amount';
+
+  @override
+  String get caixaAlreadyOpenTitle => 'Cash register already open';
+
+  @override
+  String get caixaAlreadyOpenMessage =>
+      'You already have an open cash register. Close it before opening another one.';
+
+  @override
+  String get caixaGoToSessionAction => 'Go to the open cash register';
+
+  @override
+  String get caixaPendingSaleTitle => 'Pending sale';
+
+  @override
+  String get caixaPendingSaleMessage =>
+      'There is an open sale in this session. Finish or cancel it before closing the cash register.';
+
+  @override
+  String get caixaGoToPendingSaleAction => 'Go to the sale';
 
   @override
   String get vendasTitle => 'Sale';

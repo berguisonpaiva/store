@@ -878,17 +878,17 @@ abstract class AppLocalizations {
   /// **'Withdrawal'**
   String get caixaTypeSangria;
 
-  /// No description provided for @caixaTypeVendaDinheiro.
+  /// No description provided for @caixaTypeVenda.
   ///
   /// In en, this message translates to:
-  /// **'Cash sale'**
-  String get caixaTypeVendaDinheiro;
+  /// **'Sale'**
+  String get caixaTypeVenda;
 
-  /// No description provided for @caixaTypeFechamento.
+  /// No description provided for @caixaTypeDesconhecido.
   ///
   /// In en, this message translates to:
-  /// **'Closing'**
-  String get caixaTypeFechamento;
+  /// **'Other'**
+  String get caixaTypeDesconhecido;
 
   /// No description provided for @caixaErrorAlreadyOpen.
   ///
@@ -925,6 +925,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Network error. Please try again.'**
   String get caixaErrorNetwork;
+
+  /// No description provided for @caixaErrorAccessDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'You do not have access to this cash session.'**
+  String get caixaErrorAccessDenied;
+
+  /// No description provided for @caixaHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash register history'**
+  String get caixaHistoryTitle;
+
+  /// No description provided for @caixaHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No cash sessions found.'**
+  String get caixaHistoryEmpty;
+
+  /// No description provided for @caixaHistoryFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get caixaHistoryFilterAll;
+
+  /// No description provided for @caixaStatusOpenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get caixaStatusOpenLabel;
+
+  /// No description provided for @caixaStatusClosedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get caixaStatusClosedLabel;
+
+  /// No description provided for @caixaHistoryDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash session detail'**
+  String get caixaHistoryDetailTitle;
+
+  /// No description provided for @caixaDetailSessionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Session'**
+  String get caixaDetailSessionTitle;
+
+  /// No description provided for @caixaDetailOpenedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Opened at'**
+  String get caixaDetailOpenedAt;
+
+  /// No description provided for @caixaDetailClosedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed at'**
+  String get caixaDetailClosedAt;
+
+  /// No description provided for @caixaDetailClosingAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Closing amount'**
+  String get caixaDetailClosingAmount;
+
+  /// No description provided for @caixaAlreadyOpenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash register already open'**
+  String get caixaAlreadyOpenTitle;
+
+  /// No description provided for @caixaAlreadyOpenMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have an open cash register. Close it before opening another one.'**
+  String get caixaAlreadyOpenMessage;
+
+  /// No description provided for @caixaGoToSessionAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to the open cash register'**
+  String get caixaGoToSessionAction;
+
+  /// No description provided for @caixaPendingSaleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending sale'**
+  String get caixaPendingSaleTitle;
+
+  /// No description provided for @caixaPendingSaleMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'There is an open sale in this session. Finish or cancel it before closing the cash register.'**
+  String get caixaPendingSaleMessage;
+
+  /// No description provided for @caixaGoToPendingSaleAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to the sale'**
+  String get caixaGoToPendingSaleAction;
 
   /// No description provided for @vendasTitle.
   ///

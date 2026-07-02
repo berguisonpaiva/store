@@ -1,6 +1,7 @@
 import { Entity, EntityProps, Id, Result } from '@repo/shared'
 import { CaixaError } from '../errors'
 import { TipoMovimentacaoCaixa } from './tipo-movimentacao-caixa'
+import { ValorMonetario } from './valor-monetario.vo'
 import { ValorPositivo } from './valor-positivo.vo'
 
 export interface MovimentacaoCaixaProps extends EntityProps {
@@ -17,10 +18,13 @@ export interface CreateMovimentacaoCaixaProps extends EntityProps {
   criadaEm?: Date
 }
 
-/// Cash movement scoped to a `SessaoCaixa`. `valor` is always `> 0`.
+/// Cash movement scoped to a `SessaoCaixa`. `valor` is always `> 0`, except for
+/// `ABERTURA`, which mirrors the session's `valorAbertura` and may be `0`.
 /// A `VENDA` movement MUST only be created through `criarVenda`, which is
 /// exclusively reachable from the cash port consumed by `vendas` — never via a
-/// manual command. `SUPRIMENTO`/`SANGRIA` are created through `criar`.
+/// manual command. An `ABERTURA` movement MUST only be created through
+/// `abertura`, which is exclusively reachable from `AbrirCaixa` (RN01).
+/// `SUPRIMENTO`/`SANGRIA` are created through `criar`.
 export class MovimentacaoCaixa extends Entity<MovimentacaoCaixa, MovimentacaoCaixaProps> {
   private constructor(props: MovimentacaoCaixaProps) {
     super(props)
@@ -39,12 +43,22 @@ export class MovimentacaoCaixa extends Entity<MovimentacaoCaixa, MovimentacaoCai
     return MovimentacaoCaixa.tryCreate(TipoMovimentacaoCaixa.VENDA, props)
   }
 
+  /// Factory for the automatic `ABERTURA` movement recorded when a session opens
+  /// (RN01). Its `valor` mirrors the session's `valorAbertura`, so — unlike every
+  /// other movement — it accepts `0` (a drawer may open empty).
+  static abertura(props: CreateMovimentacaoCaixaProps): Result<MovimentacaoCaixa> {
+    return MovimentacaoCaixa.tryCreate(TipoMovimentacaoCaixa.ABERTURA, props)
+  }
+
   private static tryCreate(
     tipo: TipoMovimentacaoCaixa,
     props: CreateMovimentacaoCaixaProps,
   ): Result<MovimentacaoCaixa> {
     const sessaoId = Id.required(props.sessaoId, { attribute: 'sessaoId' })
-    const valor = ValorPositivo.tryCreate(props.valor)
+    const valor =
+      tipo === TipoMovimentacaoCaixa.ABERTURA
+        ? ValorMonetario.tryCreate(props.valor, CaixaError.VALOR_INVALIDO)
+        : ValorPositivo.tryCreate(props.valor)
 
     const validated = Result.combine([sessaoId, valor])
     if (validated.isFailure) {

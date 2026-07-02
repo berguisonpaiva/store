@@ -50,6 +50,14 @@ describe('CaixaPrismaRepository.toDomain/fromDomain', () => {
     return { prisma, sessaoCaixa, movimentacaoCaixa };
   }
 
+  function buildAbertura(sessao: SessaoCaixa): MovimentacaoCaixa {
+    return MovimentacaoCaixa.abertura({
+      sessaoId: sessao.id,
+      valor: sessao.valorAbertura,
+      criadaEm: sessao.abertaEm,
+    }).instance;
+  }
+
   test('round-trip mapping reconstructs the session with money intact', async () => {
     const { prisma, sessaoCaixa } = makePrisma();
     const repo = new CaixaPrismaRepository(prisma);
@@ -72,7 +80,7 @@ describe('CaixaPrismaRepository.toDomain/fromDomain', () => {
       updatedAt: opened.updatedAt,
     }));
 
-    const result = await repo.abrirSessao(opened);
+    const result = await repo.abrirSessao(opened, buildAbertura(opened));
 
     expect(result.isOk).toBe(true);
     const persistedData = sessaoCaixa.create.mock.calls[0][0].data;
@@ -100,10 +108,43 @@ describe('CaixaPrismaRepository.toDomain/fromDomain', () => {
       valorAbertura: 0,
     }).instance;
 
-    const result = await repo.abrirSessao(opened);
+    const result = await repo.abrirSessao(opened, buildAbertura(opened));
 
     expect(result.isFailure).toBe(true);
     expect(result.errors).toContain(CaixaError.CAIXA_JA_ABERTO);
+  });
+
+  test('abrirSessao persists the session and its ABERTURA movement in one transaction', async () => {
+    const { prisma, sessaoCaixa, movimentacaoCaixa } = makePrisma();
+    const runInTransaction = jest.spyOn(prisma, 'runInTransaction');
+    const repo = new CaixaPrismaRepository(prisma);
+
+    const opened = SessaoCaixa.abrir({
+      operadorId: OPERADOR_ID,
+      valorAbertura: 10000,
+    }).instance;
+
+    sessaoCaixa.create.mockImplementation(({ data }: any) => ({
+      ...data,
+      createdAt: opened.createdAt,
+      updatedAt: opened.updatedAt,
+    }));
+    movimentacaoCaixa.create.mockImplementation(({ data }: any) => ({
+      ...data,
+    }));
+
+    const result = await repo.abrirSessao(opened, buildAbertura(opened));
+
+    expect(result.isOk).toBe(true);
+    // Both writes go through the same runInTransaction scope (RN01).
+    expect(runInTransaction).toHaveBeenCalledTimes(1);
+    expect(sessaoCaixa.create).toHaveBeenCalledTimes(1);
+    expect(movimentacaoCaixa.create).toHaveBeenCalledTimes(1);
+    const movData = movimentacaoCaixa.create.mock.calls[0][0].data;
+    expect(movData.tipo).toBe(TipoMovimentacaoCaixa.ABERTURA);
+    expect(movData.sessaoId).toBe(opened.id);
+    expect(movData.valor.toFixed(2)).toBe('100.00');
+    expect(movData.criadaEm).toEqual(opened.abertaEm);
   });
 
   test('registrarMovimentacao persists transactionally and maps back', async () => {
@@ -205,5 +246,116 @@ describe('CaixaPortService.registrarVenda', () => {
     expect(result.isFailure).toBe(true);
     expect(result.errors).toContain(CaixaError.CAIXA_JA_FECHADO);
     expect(movimentacaoCaixa.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('CaixaPrismaQuery.sessaoPorId', () => {
+  function makeQuery(row: unknown) {
+    const findUnique = jest.fn().mockResolvedValue(row);
+    const prisma = {
+      client: { sessaoCaixa: { findUnique } },
+    } as unknown as PrismaService;
+    return { query: new CaixaPrismaQuery(prisma), findUnique };
+  }
+
+  test('maps the persisted row to a SessaoCaixaDTO with money in cents', async () => {
+    const { query, findUnique } = makeQuery({
+      id: SESSAO_ID,
+      operadorId: OPERADOR_ID,
+      status: StatusSessaoCaixa.FECHADA,
+      valorAbertura: new Prisma.Decimal('100.00'),
+      valorFechamento: new Prisma.Decimal('149.50'),
+      abertaEm: new Date('2026-06-30T10:00:00Z'),
+      fechadaEm: new Date('2026-06-30T18:00:00Z'),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const result = await query.sessaoPorId(SESSAO_ID);
+
+    expect(findUnique).toHaveBeenCalledWith({ where: { id: SESSAO_ID } });
+    expect(result.isOk).toBe(true);
+    expect(result.instance).toEqual({
+      id: SESSAO_ID,
+      operadorId: OPERADOR_ID,
+      status: StatusSessaoCaixa.FECHADA,
+      valorAbertura: 10000,
+      valorFechamento: 14950,
+      abertaEm: new Date('2026-06-30T10:00:00Z'),
+      fechadaEm: new Date('2026-06-30T18:00:00Z'),
+    });
+  });
+
+  test('returns ok(null) for an unknown session id', async () => {
+    const { query } = makeQuery(null);
+
+    const result = await query.sessaoPorId(SESSAO_ID);
+
+    expect(result.isOk).toBe(true);
+    expect(result.instance).toBeNull();
+  });
+});
+
+describe('CaixaPrismaQuery.resumoSessao', () => {
+  test('ignores the ABERTURA movement in the sums so the opening value is not double-counted', async () => {
+    const prisma = {
+      client: {
+        sessaoCaixa: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: SESSAO_ID,
+            operadorId: OPERADOR_ID,
+            status: StatusSessaoCaixa.ABERTA,
+            valorAbertura: new Prisma.Decimal('100.00'),
+            valorFechamento: null,
+            abertaEm: new Date(),
+            fechadaEm: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }),
+        },
+        movimentacaoCaixa: {
+          groupBy: jest.fn().mockResolvedValue([
+            {
+              tipo: TipoMovimentacaoCaixa.ABERTURA,
+              _sum: { valor: new Prisma.Decimal('100.00') },
+            },
+            {
+              tipo: TipoMovimentacaoCaixa.SUPRIMENTO,
+              _sum: { valor: new Prisma.Decimal('20.00') },
+            },
+            {
+              tipo: TipoMovimentacaoCaixa.VENDA,
+              _sum: { valor: new Prisma.Decimal('50.00') },
+            },
+            {
+              tipo: TipoMovimentacaoCaixa.SANGRIA,
+              _sum: { valor: new Prisma.Decimal('10.00') },
+            },
+          ]),
+        },
+        venda: {
+          aggregate: jest.fn().mockResolvedValue({
+            _count: { _all: 1 },
+            _sum: { total: new Prisma.Decimal('50.00') },
+          }),
+        },
+        pagamento: { groupBy: jest.fn().mockResolvedValue([]) },
+      },
+    } as unknown as PrismaService;
+
+    const query = new CaixaPrismaQuery(prisma);
+
+    const result = await query.resumoSessao(SESSAO_ID);
+
+    expect(result.isOk).toBe(true);
+    const resumo = result.instance!;
+    // `abertura` comes from the session field, not from the ABERTURA movement.
+    expect(resumo.abertura).toBe(10000);
+    // ABERTURA must not leak into suprimentos (or any other bucket).
+    expect(resumo.suprimentos).toBe(2000);
+    expect(resumo.vendasDinheiro).toBe(5000);
+    expect(resumo.sangrias).toBe(1000);
+    // esperado = abertura + suprimentos + vendasDinheiro - sangrias.
+    expect(resumo.esperado).toBe(10000 + 2000 + 5000 - 1000);
   });
 });

@@ -9,6 +9,7 @@ export type LoginInputDTO = {
 export type AuthUserDTO = {
   id: string
   name: string
+  email: string
   role: UserRole
 }
 

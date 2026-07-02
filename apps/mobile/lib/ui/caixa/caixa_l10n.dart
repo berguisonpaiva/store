@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 
 import '../../domain/caixa/entities/cash_movement_type.dart';
+import '../../domain/caixa/entities/cash_session_status.dart';
 import '../../l10n/app_localizations.dart';
 
 /// Maps cash-session domain codes/enums to localized, user-facing strings and
@@ -13,16 +14,22 @@ extension CaixaL10n on AppLocalizations {
       'caixa.already_closed' => caixaErrorAlreadyClosed,
       'caixa.pending_sale' => caixaErrorPendingSale,
       'caixa.invalid_amount' => caixaErrorInvalidAmount,
+      'caixa.access_denied' => caixaErrorAccessDenied,
       _ => caixaErrorNetwork,
     };
   }
+
+  String caixaSessionStatus(CashSessionStatus status) => switch (status) {
+    CashSessionStatus.aberto => caixaStatusOpenLabel,
+    CashSessionStatus.fechado => caixaStatusClosedLabel,
+  };
 
   String caixaMovementType(CashMovementType type) => switch (type) {
     CashMovementType.abertura => caixaTypeAbertura,
     CashMovementType.suprimento => caixaTypeSuprimento,
     CashMovementType.sangria => caixaTypeSangria,
-    CashMovementType.vendaDinheiro => caixaTypeVendaDinheiro,
-    CashMovementType.fechamento => caixaTypeFechamento,
+    CashMovementType.venda => caixaTypeVenda,
+    CashMovementType.desconhecido => caixaTypeDesconhecido,
   };
 
   /// Formats integer cents to the locale's currency (e.g. 1990 → `R$ 19,90`).

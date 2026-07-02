@@ -4,6 +4,8 @@ import '../../ui/auth/login_page.dart';
 import '../../ui/auth/view_model/auth_session_cubit.dart';
 import '../../ui/auth/view_model/auth_session_state.dart';
 import '../../ui/caixa/abrir_caixa_page.dart';
+import '../../ui/caixa/caixa_detail_page.dart';
+import '../../ui/caixa/caixa_history_page.dart';
 import '../../ui/caixa/caixa_status_page.dart';
 import '../../ui/caixa/fechar_caixa_page.dart';
 import '../../ui/caixa/sessao_ativa_page.dart';
@@ -73,7 +75,10 @@ GoRouter createAppRouter(AuthSessionCubit session) {
         routes: [
           GoRoute(
             path: 'abrir',
-            builder: (context, state) => const AbrirCaixaPage(),
+            builder: (context, state) => AbrirCaixaPage(
+              onGoToActiveSession: (sessaoId) =>
+                  context.pushReplacement('/caixa/sessao', extra: sessaoId),
+            ),
           ),
           GoRoute(
             path: 'sessao',
@@ -82,8 +87,23 @@ GoRouter createAppRouter(AuthSessionCubit session) {
           ),
           GoRoute(
             path: 'fechar',
-            builder: (context, state) =>
-                FecharCaixaPage(args: state.extra! as FecharCaixaArgs),
+            builder: (context, state) => FecharCaixaPage(
+              args: state.extra! as FecharCaixaArgs,
+              onGoToVendas: () => context.go('/vendas'),
+            ),
+          ),
+          GoRoute(
+            path: 'historico',
+            builder: (context, state) => CaixaHistoryPage(
+              onOpenSessao: (id) => context.push('/caixa/historico/$id'),
+            ),
+            routes: [
+              GoRoute(
+                path: ':id',
+                builder: (context, state) =>
+                    CaixaDetailPage(sessaoId: state.pathParameters['id']!),
+              ),
+            ],
           ),
         ],
       ),

@@ -14,4 +14,8 @@ export class VendaError {
   static readonly INVALID_PAYMENT = 'INVALID_PAYMENT'
   static readonly SALE_HAS_NO_ITEMS = 'SALE_HAS_NO_ITEMS'
   static readonly CASH_SESSION_CLOSED = 'CASH_SESSION_CLOSED'
+
+  static readonly VARIACAO_NAO_ENCONTRADA = 'VARIACAO_NAO_ENCONTRADA'
+  static readonly VARIACAO_INATIVA = 'VARIACAO_INATIVA'
+  static readonly ACESSO_NEGADO = 'ACESSO_NEGADO'
 }

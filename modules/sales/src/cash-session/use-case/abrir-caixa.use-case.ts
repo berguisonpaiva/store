@@ -1,11 +1,12 @@
 import { Result, UseCase } from '@repo/shared'
 import { AbrirCaixaInputDTO } from '../dto'
 import { CaixaError } from '../errors'
-import { SessaoCaixa } from '../model'
+import { MovimentacaoCaixa, SessaoCaixa } from '../model'
 import { CaixaRepository } from '../provider'
 
-/// Opens a new `ABERTA` session for the operator. At most one open session per
-/// operator at any time (RF-CX-01/RF-CX-02).
+/// Opens a new `ABERTA` session for the operator, recording the automatic
+/// `ABERTURA` movement for `valorAbertura` in the same transaction (RN01).
+/// At most one open session per operator at any time (RF-CX-01/RF-CX-02).
 export class AbrirCaixa implements UseCase<AbrirCaixaInputDTO, SessaoCaixa> {
   constructor(private readonly repository: CaixaRepository) {}
 
@@ -26,6 +27,15 @@ export class AbrirCaixa implements UseCase<AbrirCaixaInputDTO, SessaoCaixa> {
       return sessao.withFail
     }
 
-    return this.repository.abrirSessao(sessao.instance)
+    const movimentacaoAbertura = MovimentacaoCaixa.abertura({
+      sessaoId: sessao.instance.id,
+      valor: sessao.instance.valorAbertura,
+      criadaEm: sessao.instance.abertaEm,
+    })
+    if (movimentacaoAbertura.isFailure) {
+      return movimentacaoAbertura.withFail
+    }
+
+    return this.repository.abrirSessao(sessao.instance, movimentacaoAbertura.instance)
   }
 }

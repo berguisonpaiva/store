@@ -176,7 +176,7 @@ export function UsersManager({ users, meta }: UsersManagerProps) {
         setDeactivateTarget(null);
         router.refresh();
       } else {
-        // CANNOT_DEACTIVATE_SELF (422) and any other failure surface as a toast;
+        // CANNOT_DEACTIVATE_SELF and any other failure surface as a toast;
         // the user stays active (RN05).
         setDeactivateTarget(null);
         toast.error(messageForCode(result.code));

@@ -32,6 +32,12 @@ class PendingSaleInSessionFailure extends CaixaFailure {
     : super('caixa.pending_sale', message: message);
 }
 
+/// The session belongs to another operator (backend `ACESSO_NEGADO` → 403).
+class CashSessionAccessDeniedFailure extends CaixaFailure {
+  const CashSessionAccessDeniedFailure({String? message})
+    : super('caixa.access_denied', message: message);
+}
+
 /// The submitted amount is invalid (e.g. negative opening, non-positive
 /// sangria/suprimento). Validated client-side before hitting the backend.
 class InvalidCashAmountFailure extends CaixaFailure {

@@ -26,7 +26,7 @@ export class CaixaPortService implements CaixaPort {
     if (!sessao.instance) {
       return Result.fail(CaixaError.CAIXA_NAO_ENCONTRADO)
     }
-    return Result.ok(sessao.instance.aberta)
+    return Result.ok(sessao.instance.isAberta())
   }
 
   async registrarVenda(
@@ -42,7 +42,7 @@ export class CaixaPortService implements CaixaPort {
       return Result.fail(CaixaError.CAIXA_NAO_ENCONTRADO)
     }
     // RN06: no movement can be appended to a closed session.
-    if (!sessao.instance.aberta) {
+    if (!sessao.instance.isAberta()) {
       return Result.fail(CaixaError.CAIXA_JA_FECHADO)
     }
 
@@ -75,7 +75,7 @@ export class CaixaPortService implements CaixaPort {
       return Result.fail(CaixaError.CAIXA_NAO_ENCONTRADO)
     }
     // RN06: no movement can be appended to a closed session.
-    if (!sessao.instance.aberta) {
+    if (!sessao.instance.isAberta()) {
       return Result.fail(CaixaError.CAIXA_JA_FECHADO)
     }
 

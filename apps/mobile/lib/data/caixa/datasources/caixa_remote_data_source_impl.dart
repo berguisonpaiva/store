@@ -104,6 +104,28 @@ class CaixaRemoteDataSourceImpl implements CaixaRemoteDataSource {
         }
       });
 
+  @override
+  Future<List<SessaoCaixaDto>> listMinhas(Map<String, dynamic> query) =>
+      _guard(() async {
+        final res = await _http.get('/caixa/minhas', query: query);
+        final data = res.data;
+        // Accept either a bare list or a paginated `{ data: [...] }` envelope.
+        final list = data is Map<String, dynamic> ? data['data'] : data;
+        try {
+          return (list as List<dynamic>)
+              .map((e) => SessaoCaixaDto.fromJson(e as Map<String, dynamic>))
+              .toList();
+        } catch (e) {
+          throw SerializationException('Invalid sessoes payload', cause: e);
+        }
+      });
+
+  @override
+  Future<SessaoCaixaDto> getSessao(String sessaoId) => _guard(() async {
+    final res = await _http.get('/caixa/$sessaoId');
+    return _parseSession(res.data);
+  });
+
   SessaoCaixaDto _parseSession(dynamic data) {
     try {
       return SessaoCaixaDto.fromJson(data as Map<String, dynamic>);

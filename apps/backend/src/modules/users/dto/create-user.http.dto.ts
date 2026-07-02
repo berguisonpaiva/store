@@ -3,7 +3,6 @@ import { UserRole } from '@repo/auth';
 import {
   IsBoolean,
   IsEmail,
-  IsEnum,
   IsOptional,
   IsString,
   MinLength,
@@ -25,8 +24,8 @@ export class CreateUserHttpDto {
   password!: string;
 
   @ApiProperty({ enum: UserRole })
-  @IsEnum(UserRole)
-  role!: UserRole;
+  @IsString()
+  role!: UserRole | string;
 
   @ApiProperty({ required: false, default: true })
   @IsOptional()

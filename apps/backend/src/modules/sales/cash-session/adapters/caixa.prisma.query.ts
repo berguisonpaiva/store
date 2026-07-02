@@ -46,6 +46,20 @@ export class CaixaPrismaQuery implements CaixaQuery {
     return Result.ok(this.toSessaoDTO(row));
   }
 
+  /// Single-session read for `GET /caixa/:id`. Backend-only — not part of the
+  /// domain `CaixaQuery` port; the owner/ADMIN scope is enforced in the controller.
+  async sessaoPorId(sessaoId: string): Promise<Result<SessaoCaixaDTO | null>> {
+    const row = await this.prisma.client.sessaoCaixa.findUnique({
+      where: { id: sessaoId },
+    });
+
+    if (!row) {
+      return Result.ok(null);
+    }
+
+    return Result.ok(this.toSessaoDTO(row));
+  }
+
   /// ADMIN list-all (RN04): every operator's sessions matching the filters.
   /// Backend-only — not part of the domain `CaixaQuery` port.
   async listarSessoes(
@@ -114,6 +128,9 @@ export class CaixaPrismaQuery implements CaixaQuery {
       );
     }
 
+    // `abertura` comes from the session field, NOT from the `ABERTURA` movement —
+    // that movement is an audit record (RN01) and is deliberately excluded from
+    // the sums below so the opening value is never counted twice in `esperado`.
     const abertura = decimalToCents(sessao.valorAbertura);
     const suprimentos = totals.get(TipoMovimentacaoCaixa.SUPRIMENTO) ?? 0;
     const vendasDinheiro = totals.get(TipoMovimentacaoCaixa.VENDA) ?? 0;

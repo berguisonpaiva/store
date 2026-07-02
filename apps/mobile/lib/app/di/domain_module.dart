@@ -10,8 +10,10 @@ import '../../domain/caixa/repositories/caixa_repository.dart';
 import '../../domain/caixa/usecases/abrir_caixa_usecase.dart';
 import '../../domain/caixa/usecases/fechar_caixa_usecase.dart';
 import '../../domain/caixa/usecases/listar_movimentacoes_usecase.dart';
+import '../../domain/caixa/usecases/listar_sessoes_usecase.dart';
 import '../../domain/caixa/usecases/obter_caixa_aberto_usecase.dart';
 import '../../domain/caixa/usecases/obter_resumo_sessao_usecase.dart';
+import '../../domain/caixa/usecases/obter_sessao_usecase.dart';
 import '../../domain/caixa/usecases/registrar_sangria_usecase.dart';
 import '../../domain/caixa/usecases/registrar_suprimento_usecase.dart';
 import '../../domain/catalog/repositories/catalog_repository.dart';
@@ -60,6 +62,8 @@ void registerDomainModule(GetIt gi) {
   gi.registerFactory(() => ObterCaixaAbertoUseCase(gi<CaixaRepository>()));
   gi.registerFactory(() => ObterResumoSessaoUseCase(gi<CaixaRepository>()));
   gi.registerFactory(() => ListarMovimentacoesUseCase(gi<CaixaRepository>()));
+  gi.registerFactory(() => ListarSessoesUseCase(gi<CaixaRepository>()));
+  gi.registerFactory(() => ObterSessaoUseCase(gi<CaixaRepository>()));
 
   gi.registerFactory(() => CriarVendaUseCase(gi<VendasRepository>()));
   gi.registerFactory(() => AdicionarItemUseCase(gi<VendasRepository>()));

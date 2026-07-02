@@ -9,6 +9,8 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { ProductsModule } from './modules/products/products.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { SalesModule } from './modules/sales/sales.module';
+import { TestSupportModule } from './modules/test-support/test-support.module';
+import { loadEnv } from './core/config/env.config';
 
 @Module({
   imports: [
@@ -20,6 +22,7 @@ import { SalesModule } from './modules/sales/sales.module';
     ProductsModule,
     InventoryModule,
     SalesModule,
+    ...(loadEnv().enableTestSupport ? [TestSupportModule] : []),
   ],
   controllers: [AppController],
   providers: [AppService],

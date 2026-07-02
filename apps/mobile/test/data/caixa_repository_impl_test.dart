@@ -9,6 +9,7 @@ import 'package:mobile/data/caixa/repositories/caixa_repository_impl.dart';
 import 'package:mobile/domain/caixa/entities/cash_movement_type.dart';
 import 'package:mobile/domain/caixa/entities/cash_session_status.dart';
 import 'package:mobile/domain/caixa/errors/caixa_failure.dart';
+import 'package:mobile/domain/caixa/repositories/caixa_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockRemote extends Mock implements CaixaRemoteDataSource {}
@@ -125,6 +126,95 @@ void main() {
       final result = await repository.obterCaixaAberto();
       expect(result.isRight(), isTrue);
       expect(result.getRight().toNullable(), isNull);
+    });
+  });
+
+  group('listarSessoes', () {
+    test('builds the wire query from the filter and maps the sessions',
+        () async {
+      when(() => remote.listMinhas(any())).thenAnswer(
+        (_) async => [
+          SessaoCaixaDto.fromJson(const {
+            'id': 's1',
+            'status': 'FECHADO',
+            'valorAbertura': 100.0,
+            'abertaEm': '2026-06-29T08:00:00.000Z',
+            'valorFechamento': 318.5,
+            'fechadaEm': '2026-06-29T18:00:00.000Z',
+          }),
+        ],
+      );
+
+      final result = await repository.listarSessoes(
+        SessoesCaixaFiltro(
+          status: CashSessionStatus.fechado,
+          from: DateTime.utc(2026, 6, 1),
+        ),
+      );
+
+      final sessions = result.getRight().toNullable()!;
+      expect(sessions.single.status, CashSessionStatus.fechado);
+      expect(sessions.single.valorFechamentoCents, 31850);
+
+      final query = verify(() => remote.listMinhas(captureAny()))
+          .captured
+          .single as Map<String, dynamic>;
+      expect(query['status'], 'FECHADO');
+      expect(query['from'], '2026-06-01T00:00:00.000Z');
+      expect(query.containsKey('to'), isFalse);
+    });
+
+    test('sends an empty query for the default filter', () async {
+      when(() => remote.listMinhas(any())).thenAnswer((_) async => []);
+      await repository.listarSessoes(const SessoesCaixaFiltro());
+      final query = verify(() => remote.listMinhas(captureAny()))
+          .captured
+          .single as Map<String, dynamic>;
+      expect(query, isEmpty);
+    });
+  });
+
+  group('obterSessao', () {
+    test('maps the session DTO', () async {
+      when(() => remote.getSessao(any())).thenAnswer(
+        (_) async => SessaoCaixaDto.fromJson(const {
+          'id': 's1',
+          'status': 'ABERTO',
+          'valorAbertura': 100.0,
+          'abertaEm': '2026-06-29T08:00:00.000Z',
+        }),
+      );
+
+      final result = await repository.obterSessao('s1');
+      expect(result.getRight().toNullable()!.id, 's1');
+    });
+
+    test('ACESSO_NEGADO → CashSessionAccessDeniedFailure', () async {
+      when(() => remote.getSessao(any())).thenThrow(
+        const CashSessionException(
+          'forbidden',
+          code: 'ACESSO_NEGADO',
+          statusCode: 403,
+        ),
+      );
+
+      final result = await repository.obterSessao('other');
+      expect(
+        result.getLeft().toNullable(),
+        isA<CashSessionAccessDeniedFailure>(),
+      );
+    });
+
+    test('bare 403 without code → CashSessionAccessDeniedFailure', () async {
+      when(() => remote.getSessao(any())).thenThrow(
+        const CashSessionException('forbidden', statusCode: 403),
+      );
+
+      final result = await repository.obterSessao('other');
+      expect(
+        result.getLeft().toNullable(),
+        isA<CashSessionAccessDeniedFailure>(),
+      );
     });
   });
 

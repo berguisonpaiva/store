@@ -54,7 +54,7 @@ export class UsersController {
         name: dto.name,
         email: dto.email,
         password: dto.password,
-        role: dto.role,
+        role: dto.role as UserRole,
         active: dto.active,
       }),
     );
@@ -74,7 +74,7 @@ export class UsersController {
         id,
         name: dto.name,
         email: dto.email,
-        role: dto.role,
+        role: dto.role as UserRole | undefined,
       }),
     );
   }

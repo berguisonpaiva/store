@@ -410,10 +410,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get caixaTypeSangria => 'Sangria';
 
   @override
-  String get caixaTypeVendaDinheiro => 'Venda em dinheiro';
+  String get caixaTypeVenda => 'Venda';
 
   @override
-  String get caixaTypeFechamento => 'Fechamento';
+  String get caixaTypeDesconhecido => 'Outro';
 
   @override
   String get caixaErrorAlreadyOpen => 'Já existe um caixa aberto.';
@@ -433,6 +433,59 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get caixaErrorNetwork => 'Erro de rede. Tente novamente.';
+
+  @override
+  String get caixaErrorAccessDenied => 'Você não tem acesso a este caixa.';
+
+  @override
+  String get caixaHistoryTitle => 'Histórico de caixas';
+
+  @override
+  String get caixaHistoryEmpty => 'Nenhuma sessão de caixa encontrada.';
+
+  @override
+  String get caixaHistoryFilterAll => 'Todas';
+
+  @override
+  String get caixaStatusOpenLabel => 'Aberto';
+
+  @override
+  String get caixaStatusClosedLabel => 'Fechado';
+
+  @override
+  String get caixaHistoryDetailTitle => 'Detalhe do caixa';
+
+  @override
+  String get caixaDetailSessionTitle => 'Sessão';
+
+  @override
+  String get caixaDetailOpenedAt => 'Aberto em';
+
+  @override
+  String get caixaDetailClosedAt => 'Fechado em';
+
+  @override
+  String get caixaDetailClosingAmount => 'Valor de fechamento';
+
+  @override
+  String get caixaAlreadyOpenTitle => 'Caixa já aberto';
+
+  @override
+  String get caixaAlreadyOpenMessage =>
+      'Você já possui um caixa aberto. Feche-o antes de abrir outro.';
+
+  @override
+  String get caixaGoToSessionAction => 'Ir para o caixa aberto';
+
+  @override
+  String get caixaPendingSaleTitle => 'Venda pendente';
+
+  @override
+  String get caixaPendingSaleMessage =>
+      'Há uma venda aberta nesta sessão. Finalize ou cancele a venda antes de fechar o caixa.';
+
+  @override
+  String get caixaGoToPendingSaleAction => 'Ir para a venda';
 
   @override
   String get vendasTitle => 'Venda';

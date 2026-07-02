@@ -1,33 +1,39 @@
 import {
   AdicionarItem,
+  AdicionarPagamento,
+  AlterarQuantidadeItem,
   AplicarDesconto,
+  FormaPagamento,
   RemoverItem,
   StatusVenda,
   TipoDesconto,
   VendaError,
 } from '../../src/venda'
 import { FakeEstoqueGateway } from '../mock/fake-estoque.gateway'
+import { FakeVariacaoGateway } from '../mock/fake-variacao.gateway'
 import { InMemoryVendasRepository } from '../mock/in-memory-vendas.repository'
-import { buildVenda, VARIACAO_A, VARIACAO_B } from '../mock/venda.builder'
+import { buildVenda, USUARIO_ID, VARIACAO_A, VARIACAO_B } from '../mock/venda.builder'
 
 function setup() {
   const repository = new InMemoryVendasRepository()
   const estoque = new FakeEstoqueGateway()
-  return { repository, estoque }
+  const variacoes = new FakeVariacaoGateway()
+  variacoes.comVariacao(VARIACAO_A, 1000)
+  variacoes.comVariacao(VARIACAO_B, 500)
+  return { repository, estoque, variacoes }
 }
 
 describe('AdicionarItem', () => {
-  test('adds an item with a price snapshot and recomputes totals', async () => {
-    const { repository, estoque } = setup()
+  test('adds an item snapshotting the gateway price and recomputes totals (RN10)', async () => {
+    const { repository, estoque, variacoes } = setup()
     const venda = buildVenda({ itens: [] })
     repository.seed(venda)
-    const useCase = new AdicionarItem(repository, estoque)
+    const useCase = new AdicionarItem(repository, variacoes, estoque)
 
     const result = await useCase.execute({
       vendaId: venda.id,
       variacaoId: VARIACAO_A,
       quantidade: 2,
-      precoUnitario: 1000,
     })
 
     expect(result.isOk).toBe(true)
@@ -37,17 +43,51 @@ describe('AdicionarItem', () => {
     expect(repository.get(venda.id)!.subtotal).toBe(2000)
   })
 
-  test('rejects a non-positive quantity', async () => {
-    const { repository, estoque } = setup()
+  test('VARIACAO_NAO_ENCONTRADA when the gateway does not resolve the id', async () => {
+    const { repository, estoque, variacoes } = setup()
     const venda = buildVenda({ itens: [] })
     repository.seed(venda)
-    const useCase = new AdicionarItem(repository, estoque)
+    const useCase = new AdicionarItem(repository, variacoes, estoque)
+
+    const result = await useCase.execute({
+      vendaId: venda.id,
+      variacaoId: '99999999-9999-9999-9999-999999999999',
+      quantidade: 1,
+    })
+
+    expect(result.isFailure).toBe(true)
+    expect(result.errors).toContain(VendaError.VARIACAO_NAO_ENCONTRADA)
+    expect(repository.get(venda.id)!.itens).toHaveLength(0)
+  })
+
+  test('VARIACAO_INATIVA when the variation is inactive', async () => {
+    const { repository, estoque, variacoes } = setup()
+    const venda = buildVenda({ itens: [] })
+    repository.seed(venda)
+    variacoes.inativa(VARIACAO_A)
+    const useCase = new AdicionarItem(repository, variacoes, estoque)
+
+    const result = await useCase.execute({
+      vendaId: venda.id,
+      variacaoId: VARIACAO_A,
+      quantidade: 1,
+    })
+
+    expect(result.isFailure).toBe(true)
+    expect(result.errors).toContain(VendaError.VARIACAO_INATIVA)
+    expect(repository.get(venda.id)!.itens).toHaveLength(0)
+  })
+
+  test('rejects a non-positive quantity', async () => {
+    const { repository, estoque, variacoes } = setup()
+    const venda = buildVenda({ itens: [] })
+    repository.seed(venda)
+    const useCase = new AdicionarItem(repository, variacoes, estoque)
 
     const result = await useCase.execute({
       vendaId: venda.id,
       variacaoId: VARIACAO_A,
       quantidade: 0,
-      precoUnitario: 1000,
     })
 
     expect(result.isFailure).toBe(true)
@@ -55,14 +95,13 @@ describe('AdicionarItem', () => {
   })
 
   test('SALE_NOT_FOUND for an unknown sale', async () => {
-    const { repository, estoque } = setup()
-    const useCase = new AdicionarItem(repository, estoque)
+    const { repository, estoque, variacoes } = setup()
+    const useCase = new AdicionarItem(repository, variacoes, estoque)
 
     const result = await useCase.execute({
       vendaId: '99999999-9999-9999-9999-999999999999',
       variacaoId: VARIACAO_A,
       quantidade: 1,
-      precoUnitario: 1000,
     })
 
     expect(result.isFailure).toBe(true)
@@ -70,19 +109,18 @@ describe('AdicionarItem', () => {
   })
 
   test('SALE_ALREADY_FINALIZED when the sale is CONCLUIDA', async () => {
-    const { repository, estoque } = setup()
+    const { repository, estoque, variacoes } = setup()
     const venda = buildVenda({
       status: StatusVenda.CONCLUIDA,
       itens: [{ variacaoId: VARIACAO_A, quantidade: 1, precoUnitario: 1000 }],
     })
     repository.seed(venda)
-    const useCase = new AdicionarItem(repository, estoque)
+    const useCase = new AdicionarItem(repository, variacoes, estoque)
 
     const result = await useCase.execute({
       vendaId: venda.id,
       variacaoId: VARIACAO_B,
       quantidade: 1,
-      precoUnitario: 500,
     })
 
     expect(result.isFailure).toBe(true)
@@ -92,17 +130,16 @@ describe('AdicionarItem', () => {
 
 describe('AdicionarItem — stock pre-check (RN09)', () => {
   test('adds the item when the quantity is within available stock', async () => {
-    const { repository, estoque } = setup()
+    const { repository, estoque, variacoes } = setup()
     const venda = buildVenda({ itens: [] })
     repository.seed(venda)
     estoque.comSaldo(VARIACAO_A, 5)
-    const useCase = new AdicionarItem(repository, estoque)
+    const useCase = new AdicionarItem(repository, variacoes, estoque)
 
     const result = await useCase.execute({
       vendaId: venda.id,
       variacaoId: VARIACAO_A,
       quantidade: 3,
-      precoUnitario: 1000,
     })
 
     expect(result.isOk).toBe(true)
@@ -111,17 +148,16 @@ describe('AdicionarItem — stock pre-check (RN09)', () => {
   })
 
   test('rejects with INSUFFICIENT_STOCK and does not add the item', async () => {
-    const { repository, estoque } = setup()
+    const { repository, estoque, variacoes } = setup()
     const venda = buildVenda({ itens: [] })
     repository.seed(venda)
     estoque.comSaldo(VARIACAO_A, 2)
-    const useCase = new AdicionarItem(repository, estoque)
+    const useCase = new AdicionarItem(repository, variacoes, estoque)
 
     const result = await useCase.execute({
       vendaId: venda.id,
       variacaoId: VARIACAO_A,
       quantidade: 3,
-      precoUnitario: 1000,
     })
 
     expect(result.isFailure).toBe(true)
@@ -130,19 +166,18 @@ describe('AdicionarItem — stock pre-check (RN09)', () => {
   })
 
   test('validates the EFFECTIVE resulting quantity for the variation (existing line + delta)', async () => {
-    const { repository, estoque } = setup()
+    const { repository, estoque, variacoes } = setup()
     // The sale already has 2 units of VARIACAO_A; only 3 are available.
     const venda = buildVenda({ itens: [{ variacaoId: VARIACAO_A, quantidade: 2, precoUnitario: 1000 }] })
     repository.seed(venda)
     estoque.comSaldo(VARIACAO_A, 3)
-    const useCase = new AdicionarItem(repository, estoque)
+    const useCase = new AdicionarItem(repository, variacoes, estoque)
 
     // Adding 2 more would make 4 > 3 available → rejected.
     const result = await useCase.execute({
       vendaId: venda.id,
       variacaoId: VARIACAO_A,
       quantidade: 2,
-      precoUnitario: 1000,
     })
 
     expect(result.isFailure).toBe(true)
@@ -246,6 +281,58 @@ describe('AplicarDesconto', () => {
     const useCase = new AplicarDesconto(repository)
 
     const result = await useCase.execute({ vendaId: venda.id, tipo: TipoDesconto.VALOR, valor: 1 })
+
+    expect(result.isFailure).toBe(true)
+    expect(result.errors).toContain(VendaError.SALE_ALREADY_FINALIZED)
+  })
+})
+
+describe('RN06 — a CONCLUIDA sale is immutable', () => {
+  function concluida() {
+    const { repository, estoque } = setup()
+    const venda = buildVenda({
+      status: StatusVenda.CONCLUIDA,
+      itens: [{ variacaoId: VARIACAO_A, quantidade: 1, precoUnitario: 1000 }],
+    })
+    repository.seed(venda)
+    return { repository, estoque, venda }
+  }
+
+  test('rejects alterarQuantidadeItem with SALE_ALREADY_FINALIZED', async () => {
+    const { repository, estoque, venda } = concluida()
+    const useCase = new AlterarQuantidadeItem(repository, estoque)
+
+    const result = await useCase.execute({
+      vendaId: venda.id,
+      itemId: venda.itens[0]!.id,
+      quantidade: 2,
+      usuarioId: USUARIO_ID,
+    })
+
+    expect(result.isFailure).toBe(true)
+    expect(result.errors).toContain(VendaError.SALE_ALREADY_FINALIZED)
+  })
+
+  test('rejects aplicarDesconto with SALE_ALREADY_FINALIZED', async () => {
+    const { repository, venda } = concluida()
+    const useCase = new AplicarDesconto(repository)
+
+    const result = await useCase.execute({ vendaId: venda.id, tipo: TipoDesconto.VALOR, valor: 100 })
+
+    expect(result.isFailure).toBe(true)
+    expect(result.errors).toContain(VendaError.SALE_ALREADY_FINALIZED)
+  })
+
+  test('rejects adicionarPagamento with SALE_ALREADY_FINALIZED', async () => {
+    const { repository, venda } = concluida()
+    const useCase = new AdicionarPagamento(repository)
+
+    const result = await useCase.execute({
+      vendaId: venda.id,
+      usuarioId: USUARIO_ID,
+      forma: FormaPagamento.DINHEIRO,
+      valor: 100,
+    })
 
     expect(result.isFailure).toBe(true)
     expect(result.errors).toContain(VendaError.SALE_ALREADY_FINALIZED)

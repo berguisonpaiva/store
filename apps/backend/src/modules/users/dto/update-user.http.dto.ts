@@ -2,7 +2,6 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '@repo/auth';
 import {
   IsEmail,
-  IsEnum,
   IsOptional,
   IsString,
   MinLength,
@@ -22,6 +21,6 @@ export class UpdateUserHttpDto {
 
   @ApiPropertyOptional({ enum: UserRole })
   @IsOptional()
-  @IsEnum(UserRole)
-  role?: UserRole;
+  @IsString()
+  role?: UserRole | string;
 }

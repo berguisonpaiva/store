@@ -33,6 +33,7 @@ describe('Login', () => {
     expect(result.instance.user).toEqual({
       id: user.id,
       name: user.name,
+      email: user.email,
       role: UserRole.ADMIN,
     })
   })

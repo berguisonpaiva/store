@@ -10,6 +10,8 @@ import { Result } from '@repo/shared';
 import { UserRole } from '@repo/auth';
 import {
   AdicionarItem,
+  AdicionarPagamento,
+  AlterarQuantidadeItem,
   AplicarDesconto,
   BuscarVenda,
   CancelarVenda,
@@ -62,6 +64,8 @@ describe('Vendas controllers', () => {
   const criarVenda = { execute: jest.fn() };
   const adicionarItem = { execute: jest.fn() };
   const removerItem = { execute: jest.fn() };
+  const alterarQuantidadeItem = { execute: jest.fn() };
+  const adicionarPagamento = { execute: jest.fn() };
   const aplicarDesconto = { execute: jest.fn() };
   const finalizarVenda = { execute: jest.fn() };
   const cancelarVenda = { execute: jest.fn() };
@@ -79,6 +83,8 @@ describe('Vendas controllers', () => {
         { provide: CriarVenda, useValue: criarVenda },
         { provide: AdicionarItem, useValue: adicionarItem },
         { provide: RemoverItem, useValue: removerItem },
+        { provide: AlterarQuantidadeItem, useValue: alterarQuantidadeItem },
+        { provide: AdicionarPagamento, useValue: adicionarPagamento },
         { provide: AplicarDesconto, useValue: aplicarDesconto },
         { provide: FinalizarVenda, useValue: finalizarVenda },
         { provide: CancelarVenda, useValue: cancelarVenda },
@@ -105,11 +111,8 @@ describe('Vendas controllers', () => {
     expect(out.subtotal).toBe(30); // cents -> reais
   });
 
-  test('adicionar resolves the identifier to a variation and snapshots its price', async () => {
-    variacaoReader.resolver.mockResolvedValue({
-      variacaoId: VARIACAO_ID,
-      precoUnitario: 1500,
-    });
+  test('adicionar resolves the identifier and delegates WITHOUT a price (RN10)', async () => {
+    variacaoReader.resolver.mockResolvedValue({ variacaoId: VARIACAO_ID });
     adicionarItem.execute.mockResolvedValue(Result.ok(vendaDTO()));
 
     await commands.adicionar(VENDA_ID, { sku: 'ABC', quantidade: 2 });
@@ -119,11 +122,11 @@ describe('Vendas controllers', () => {
       sku: 'ABC',
       codigoBarras: undefined,
     });
+    // The price snapshot is resolved by the domain via VariacaoGateway, never here.
     expect(adicionarItem.execute).toHaveBeenCalledWith({
       vendaId: VENDA_ID,
       variacaoId: VARIACAO_ID,
       quantidade: 2,
-      precoUnitario: 1500,
     });
   });
 
@@ -133,12 +136,51 @@ describe('Vendas controllers', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  test('adicionar with an unresolved identifier returns 400', async () => {
+  test('adicionar with an unresolved identifier returns 404 (VARIACAO_NAO_ENCONTRADA)', async () => {
     variacaoReader.resolver.mockResolvedValue(null);
 
     await expect(
       commands.adicionar(VENDA_ID, { sku: 'NOPE', quantidade: 1 }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  test('quantidade delegates to AlterarQuantidadeItem with the caller usuarioId', async () => {
+    alterarQuantidadeItem.execute.mockResolvedValue(Result.ok(vendaDTO()));
+
+    const out = await commands.quantidade(USUARIO_ID, VENDA_ID, ITEM_ID, {
+      quantidade: 5,
+    });
+
+    expect(alterarQuantidadeItem.execute).toHaveBeenCalledWith({
+      vendaId: VENDA_ID,
+      itemId: ITEM_ID,
+      quantidade: 5,
+      usuarioId: USUARIO_ID,
+    });
+    expect(out.id).toBe(VENDA_ID);
+  });
+
+  test('pagamento converts valor from reais to cents and passes the caller usuarioId', async () => {
+    adicionarPagamento.execute.mockResolvedValue(
+      Result.ok(
+        vendaDTO({
+          pagamentos: [{ id: ITEM_ID, forma: FormaPagamento.PIX, valor: 1250 }],
+        }),
+      ),
+    );
+
+    const out = await commands.pagamento(USUARIO_ID, VENDA_ID, {
+      forma: FormaPagamento.PIX,
+      valor: 12.5,
+    });
+
+    expect(adicionarPagamento.execute).toHaveBeenCalledWith({
+      vendaId: VENDA_ID,
+      usuarioId: USUARIO_ID,
+      forma: FormaPagamento.PIX,
+      valor: 1250,
+    });
+    expect(out.pagamentos[0].valor).toBe(12.5); // cents -> reais
   });
 
   test('remover delegates to RemoverItem', async () => {
@@ -326,20 +368,17 @@ describe('Vendas controllers', () => {
 
   // --- Error rows (one assertion per mapped status) --------------------------
 
-  test('criar maps NO_OPEN_CASH_SESSION -> 422', async () => {
+  test('criar maps NO_OPEN_CASH_SESSION -> 409', async () => {
     criarVenda.execute.mockResolvedValue(
       Result.fail(VendaError.NO_OPEN_CASH_SESSION),
     );
     await expect(commands.criar(USUARIO_ID, {})).rejects.toBeInstanceOf(
-      UnprocessableEntityException,
+      ConflictException,
     );
   });
 
   test('adicionar maps SALE_NOT_FOUND -> 404', async () => {
-    variacaoReader.resolver.mockResolvedValue({
-      variacaoId: VARIACAO_ID,
-      precoUnitario: 1500,
-    });
+    variacaoReader.resolver.mockResolvedValue({ variacaoId: VARIACAO_ID });
     adicionarItem.execute.mockResolvedValue(
       Result.fail(VendaError.SALE_NOT_FOUND),
     );
@@ -349,15 +388,83 @@ describe('Vendas controllers', () => {
   });
 
   test('adicionar maps SALE_ALREADY_FINALIZED -> 409', async () => {
-    variacaoReader.resolver.mockResolvedValue({
-      variacaoId: VARIACAO_ID,
-      precoUnitario: 1500,
-    });
+    variacaoReader.resolver.mockResolvedValue({ variacaoId: VARIACAO_ID });
     adicionarItem.execute.mockResolvedValue(
       Result.fail(VendaError.SALE_ALREADY_FINALIZED),
     );
     await expect(
       commands.adicionar(VENDA_ID, { variacaoId: VARIACAO_ID, quantidade: 1 }),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  test('adicionar maps VARIACAO_NAO_ENCONTRADA (use case) -> 404', async () => {
+    variacaoReader.resolver.mockResolvedValue({ variacaoId: VARIACAO_ID });
+    adicionarItem.execute.mockResolvedValue(
+      Result.fail(VendaError.VARIACAO_NAO_ENCONTRADA),
+    );
+    await expect(
+      commands.adicionar(VENDA_ID, { variacaoId: VARIACAO_ID, quantidade: 1 }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  test('adicionar maps VARIACAO_INATIVA -> 422', async () => {
+    variacaoReader.resolver.mockResolvedValue({ variacaoId: VARIACAO_ID });
+    adicionarItem.execute.mockResolvedValue(
+      Result.fail(VendaError.VARIACAO_INATIVA),
+    );
+    await expect(
+      commands.adicionar(VENDA_ID, { variacaoId: VARIACAO_ID, quantidade: 1 }),
+    ).rejects.toBeInstanceOf(UnprocessableEntityException);
+  });
+
+  test('quantidade maps INSUFFICIENT_STOCK -> 422', async () => {
+    alterarQuantidadeItem.execute.mockResolvedValue(
+      Result.fail(VendaError.INSUFFICIENT_STOCK),
+    );
+    await expect(
+      commands.quantidade(USUARIO_ID, VENDA_ID, ITEM_ID, { quantidade: 99 }),
+    ).rejects.toBeInstanceOf(UnprocessableEntityException);
+  });
+
+  test('quantidade maps ITEM_NOT_FOUND -> 404', async () => {
+    alterarQuantidadeItem.execute.mockResolvedValue(
+      Result.fail(VendaError.ITEM_NOT_FOUND),
+    );
+    await expect(
+      commands.quantidade(USUARIO_ID, VENDA_ID, ITEM_ID, { quantidade: 2 }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  test('quantidade maps ACESSO_NEGADO (non-owner) -> 403', async () => {
+    alterarQuantidadeItem.execute.mockResolvedValue(
+      Result.fail(VendaError.ACESSO_NEGADO),
+    );
+    await expect(
+      commands.quantidade(USUARIO_ID, VENDA_ID, ITEM_ID, { quantidade: 2 }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  test('pagamento maps ACESSO_NEGADO (non-owner) -> 403', async () => {
+    adicionarPagamento.execute.mockResolvedValue(
+      Result.fail(VendaError.ACESSO_NEGADO),
+    );
+    await expect(
+      commands.pagamento(USUARIO_ID, VENDA_ID, {
+        forma: FormaPagamento.DINHEIRO,
+        valor: 10,
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  test('pagamento maps SALE_ALREADY_FINALIZED -> 409', async () => {
+    adicionarPagamento.execute.mockResolvedValue(
+      Result.fail(VendaError.SALE_ALREADY_FINALIZED),
+    );
+    await expect(
+      commands.pagamento(USUARIO_ID, VENDA_ID, {
+        forma: FormaPagamento.DINHEIRO,
+        valor: 10,
+      }),
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
@@ -383,12 +490,12 @@ describe('Vendas controllers', () => {
     ).rejects.toBeInstanceOf(UnprocessableEntityException);
   });
 
-  test('cancelar maps CASH_SESSION_CLOSED -> 422', async () => {
+  test('cancelar maps CASH_SESSION_CLOSED -> 409', async () => {
     cancelarVenda.execute.mockResolvedValue(
       Result.fail(VendaError.CASH_SESSION_CLOSED),
     );
     await expect(commands.cancelar(VENDA_ID)).rejects.toBeInstanceOf(
-      UnprocessableEntityException,
+      ConflictException,
     );
   });
 

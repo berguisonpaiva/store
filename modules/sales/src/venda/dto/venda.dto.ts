@@ -13,17 +13,26 @@ export type CriarVendaInputDTO = {
   usuarioId: string
 }
 
+/// `precoUnitario` is NOT part of the input: the use case resolves the variation
+/// through `VariacaoGateway.buscarParaVenda` and snapshots its current price (RN10).
 export type AdicionarItemInputDTO = {
   vendaId: string
   variacaoId: string
   quantidade: number
-  /// Price snapshot (cents) resolved at the edge from the catalog at add time.
-  precoUnitario: number
 }
 
 export type RemoverItemInputDTO = {
   vendaId: string
   itemId: string
+}
+
+/// Changes the quantity of an existing line; `usuarioId` comes from the
+/// authenticated context and must match the sale's owner (design D7).
+export type AlterarQuantidadeItemInputDTO = {
+  vendaId: string
+  itemId: string
+  quantidade: number
+  usuarioId: string
 }
 
 export type AplicarDescontoInputDTO = {
@@ -34,6 +43,15 @@ export type AplicarDescontoInputDTO = {
 }
 
 export type PagamentoInputDTO = {
+  forma: FormaPagamento
+  valor: number
+}
+
+/// Registers a single incremental payment on an `ABERTA` sale; `usuarioId` comes
+/// from the authenticated context and must match the sale's owner (design D7).
+export type AdicionarPagamentoInputDTO = {
+  vendaId: string
+  usuarioId: string
   forma: FormaPagamento
   valor: number
 }

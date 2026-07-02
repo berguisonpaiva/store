@@ -23,11 +23,16 @@ class FecharCaixaArgs {
 }
 
 /// Closes a cash session: the operator enters the counted amount, sees
-/// expected/counted/divergence, and confirms before closing.
+/// expected/counted/divergence, and confirms before closing. When the API
+/// blocks the close with `VENDA_PENDENTE_NO_FECHAMENTO`, a dedicated blocked
+/// state points the operator to the pending sale (the session stays open).
 class FecharCaixaPage extends StatefulWidget {
-  const FecharCaixaPage({super.key, required this.args});
+  const FecharCaixaPage({super.key, required this.args, this.onGoToVendas});
 
   final FecharCaixaArgs args;
+
+  /// Navigates to the sales screen so the operator can resolve the open sale.
+  final VoidCallback? onGoToVendas;
 
   @override
   State<FecharCaixaPage> createState() => _FecharCaixaPageState();
@@ -91,6 +96,10 @@ class _FecharCaixaPageState extends State<FecharCaixaPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (state.isBlockedByPendingSale) ...[
+                    _PendingSaleCard(onGoToVendas: widget.onGoToVendas),
+                    const SizedBox(height: AppSpacing.md),
+                  ],
                   TextFormField(
                     controller: _amountController,
                     enabled: !state.isSubmitting,
@@ -129,6 +138,60 @@ class _FecharCaixaPageState extends State<FecharCaixaPage> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Explicit blocked state for `VENDA_PENDENTE_NO_FECHAMENTO`: the close was
+/// rejected because a sale is still open; offers a shortcut to resolve it.
+class _PendingSaleCard extends StatelessWidget {
+  const _PendingSaleCard({this.onGoToVendas});
+
+  final VoidCallback? onGoToVendas;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final color = theme.colorScheme.error;
+
+    return Card(
+      color: theme.colorScheme.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.error_outline, color: color),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    l10n.caixaPendingSaleTitle,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              l10n.caixaPendingSaleMessage,
+              style: theme.textTheme.bodyMedium,
+            ),
+            if (onGoToVendas != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: onGoToVendas,
+                  child: Text(l10n.caixaGoToPendingSaleAction),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:mobile/app/di/injector.dart';
 import 'package:mobile/domain/caixa/entities/cash_session_status.dart';
 import 'package:mobile/domain/caixa/entities/sessao_caixa_entity.dart';
+import 'package:mobile/domain/caixa/errors/caixa_failure.dart';
 import 'package:mobile/domain/caixa/usecases/fechar_caixa_usecase.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 import 'package:mobile/ui/caixa/fechar_caixa_page.dart';
@@ -13,11 +14,11 @@ class _MockFecharCaixa extends Mock implements FecharCaixaUseCase {}
 
 const _args = FecharCaixaArgs(sessaoId: 's1', esperadoCents: 32000);
 
-Widget _app() => const MaterialApp(
-  locale: Locale('en'),
+Widget _app({VoidCallback? onGoToVendas}) => MaterialApp(
+  locale: const Locale('en'),
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
-  home: FecharCaixaPage(args: _args),
+  home: FecharCaixaPage(args: _args, onGoToVendas: onGoToVendas),
 );
 
 final _closed = SessaoCaixaEntity(
@@ -82,5 +83,35 @@ void main() {
     verify(
       () => fecharCaixa(sessaoId: 's1', valorFechamentoCents: 31850),
     ).called(1);
+  });
+
+  testWidgets('a pending sale shows the explicit blocked state with a '
+      'shortcut to the sale', (tester) async {
+    when(
+      () => fecharCaixa(
+        sessaoId: any(named: 'sessaoId'),
+        valorFechamentoCents: any(named: 'valorFechamentoCents'),
+      ),
+    ).thenAnswer((_) async => left(const PendingSaleInSessionFailure()));
+    var wentToVendas = false;
+
+    await tester.pumpWidget(_app(onGoToVendas: () => wentToVendas = true));
+    await tester.enterText(find.byType(TextFormField), '320,00');
+    await tester.pump();
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Close cash register'));
+    await tester.pump();
+    await tester.tap(find.text('Confirm and close'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pending sale'), findsOneWidget);
+    expect(
+      find.textContaining('There is an open sale in this session'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Go to the sale'));
+    await tester.pump();
+    expect(wentToVendas, isTrue);
   });
 }

@@ -1,128 +1,92 @@
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  NotFoundException,
-  UnauthorizedException,
-  UnprocessableEntityException,
-} from '@nestjs/common';
+import { BadRequestException, HttpStatus } from '@nestjs/common';
 import { toHttpException } from './domain-error.mapper';
 
 describe('domain-error.mapper', () => {
-  test('maps inventory domain errors to the expected HTTP exceptions', () => {
-    expect(toHttpException(['ESTOQUE_INSUFICIENTE'])).toBeInstanceOf(
-      ConflictException,
-    );
-    expect(toHttpException(['VARIACAO_NAO_ENCONTRADA'])).toBeInstanceOf(
-      NotFoundException,
-    );
-    expect(toHttpException(['QUANTIDADE_INVALIDA'])).toBeInstanceOf(
-      BadRequestException,
-    );
+  const canonicalTable: Array<[number, string[]]> = [
+    [
+      HttpStatus.UNAUTHORIZED,
+      ['INVALID_CREDENTIALS', 'INVALID_TOKEN', 'USER_INACTIVE'],
+    ],
+    [
+      HttpStatus.FORBIDDEN,
+      ['OPERATION_NOT_ALLOWED_FOR_ROLE', 'ACESSO_NEGADO', 'NAO_E_DONO_DO_CAIXA'],
+    ],
+    [
+      HttpStatus.NOT_FOUND,
+      [
+        'USER_NOT_FOUND',
+        'CATEGORY_NOT_FOUND',
+        'PRODUCT_NOT_FOUND',
+        'VARIATION_NOT_FOUND',
+        'VARIACAO_NAO_ENCONTRADA',
+        'CAIXA_NAO_ENCONTRADO',
+        'SALE_NOT_FOUND',
+        'ITEM_NOT_FOUND',
+      ],
+    ],
+    [
+      HttpStatus.CONFLICT,
+      [
+        'EMAIL_ALREADY_IN_USE',
+        'CATEGORY_ALREADY_EXISTS',
+        'SKU_ALREADY_IN_USE',
+        'BARCODE_ALREADY_IN_USE',
+        'LEDGER_IMUTAVEL',
+        'CAIXA_JA_ABERTO',
+        'CAIXA_JA_FECHADO',
+        'NO_OPEN_CASH_SESSION',
+        'CASH_SESSION_CLOSED',
+        'VENDA_PENDENTE_NO_FECHAMENTO',
+        'SALE_ALREADY_FINALIZED',
+        'SALE_NOT_OPEN',
+      ],
+    ],
+    [
+      HttpStatus.UNPROCESSABLE_ENTITY,
+      [
+        'INSUFFICIENT_STOCK',
+        'ESTOQUE_INSUFICIENTE',
+        'PAYMENT_MISMATCH',
+        'SALE_HAS_NO_ITEMS',
+        'DISCOUNT_EXCEEDS_SUBTOTAL',
+        'VARIACAO_INATIVA',
+        'CATEGORY_INACTIVE',
+        'PRODUCT_MUST_HAVE_VARIATION',
+      ],
+    ],
+    [
+      HttpStatus.BAD_REQUEST,
+      [
+        'INVALID_ROLE',
+        'INVALID_QUANTITY',
+        'QUANTIDADE_INVALIDA',
+        'INVALID_DISCOUNT',
+        'INVALID_PAYMENT',
+        'INVALID_PRICE',
+        'VALOR_INVALIDO',
+        'SALDO_INVALIDO',
+        'MOTIVO_MOVIMENTACAO_INVALIDO',
+        'CANNOT_DEACTIVATE_SELF',
+      ],
+    ],
+  ];
+
+  test.each(
+    canonicalTable.flatMap(([status, codes]) =>
+      codes.map((code) => ({ code, status })),
+    ),
+  )('maps $code to HTTP $status', ({ code, status }) => {
+    const exception = toHttpException([code]);
+
+    expect(exception.getStatus()).toBe(status);
+    expect(exception.message).toBe(code);
   });
 
-  test('maps auth/user domain errors to the expected HTTP exceptions', () => {
-    expect(toHttpException(['EMAIL_ALREADY_IN_USE'])).toBeInstanceOf(
-      ConflictException,
-    );
-    expect(toHttpException(['USER_NOT_FOUND'])).toBeInstanceOf(
-      NotFoundException,
-    );
-    expect(toHttpException(['OPERATION_NOT_ALLOWED_FOR_ROLE'])).toBeInstanceOf(
-      ForbiddenException,
-    );
-    expect(toHttpException(['INVALID_CREDENTIALS'])).toBeInstanceOf(
-      UnauthorizedException,
-    );
-    expect(toHttpException(['INVALID_TOKEN'])).toBeInstanceOf(
-      UnauthorizedException,
-    );
-    expect(toHttpException(['USER_INACTIVE'])).toBeInstanceOf(
-      UnauthorizedException,
-    );
-    expect(toHttpException(['CANNOT_DEACTIVATE_SELF'])).toBeInstanceOf(
-      UnprocessableEntityException,
-    );
-  });
+  test('falls back to bad request for unknown codes', () => {
+    const exception = toHttpException(['UNKNOWN_CODE']);
 
-  test('maps catalog domain errors to the expected HTTP exceptions', () => {
-    expect(toHttpException(['CATEGORY_ALREADY_EXISTS'])).toBeInstanceOf(
-      ConflictException,
-    );
-    expect(toHttpException(['SKU_ALREADY_IN_USE'])).toBeInstanceOf(
-      ConflictException,
-    );
-    expect(toHttpException(['BARCODE_ALREADY_IN_USE'])).toBeInstanceOf(
-      ConflictException,
-    );
-    expect(toHttpException(['CATEGORY_NOT_FOUND'])).toBeInstanceOf(
-      NotFoundException,
-    );
-    expect(toHttpException(['PRODUCT_NOT_FOUND'])).toBeInstanceOf(
-      NotFoundException,
-    );
-    expect(toHttpException(['VARIATION_NOT_FOUND'])).toBeInstanceOf(
-      NotFoundException,
-    );
-    expect(toHttpException(['CATEGORY_INACTIVE'])).toBeInstanceOf(
-      UnprocessableEntityException,
-    );
-    expect(toHttpException(['INVALID_PRICE'])).toBeInstanceOf(
-      UnprocessableEntityException,
-    );
-    expect(toHttpException(['PRODUCT_MUST_HAVE_VARIATION'])).toBeInstanceOf(
-      UnprocessableEntityException,
-    );
-  });
-
-  test('maps caixa (PT) domain errors to the expected HTTP exceptions', () => {
-    expect(toHttpException(['CAIXA_JA_ABERTO'])).toBeInstanceOf(
-      ConflictException,
-    );
-    expect(toHttpException(['CAIXA_JA_FECHADO'])).toBeInstanceOf(
-      ConflictException,
-    );
-    expect(toHttpException(['VENDA_PENDENTE_NO_FECHAMENTO'])).toBeInstanceOf(
-      UnprocessableEntityException,
-    );
-    expect(toHttpException(['CAIXA_NAO_ENCONTRADO'])).toBeInstanceOf(
-      NotFoundException,
-    );
-    expect(toHttpException(['NAO_E_DONO_DO_CAIXA'])).toBeInstanceOf(
-      ForbiddenException,
-    );
-    expect(toHttpException(['ACESSO_NEGADO'])).toBeInstanceOf(
-      ForbiddenException,
-    );
-    expect(toHttpException(['VALOR_INVALIDO'])).toBeInstanceOf(
-      UnprocessableEntityException,
-    );
-  });
-
-  test('maps venda domain errors to the expected HTTP exceptions', () => {
-    expect(toHttpException(['SALE_NOT_FOUND'])).toBeInstanceOf(
-      NotFoundException,
-    );
-    expect(toHttpException(['ITEM_NOT_FOUND'])).toBeInstanceOf(
-      NotFoundException,
-    );
-    expect(toHttpException(['SALE_ALREADY_FINALIZED'])).toBeInstanceOf(
-      ConflictException,
-    );
-    expect(toHttpException(['NO_OPEN_CASH_SESSION'])).toBeInstanceOf(
-      UnprocessableEntityException,
-    );
-    expect(toHttpException(['INSUFFICIENT_STOCK'])).toBeInstanceOf(
-      UnprocessableEntityException,
-    );
-    expect(toHttpException(['PAYMENT_MISMATCH'])).toBeInstanceOf(
-      UnprocessableEntityException,
-    );
-    expect(toHttpException(['DISCOUNT_EXCEEDS_SUBTOTAL'])).toBeInstanceOf(
-      UnprocessableEntityException,
-    );
-    expect(toHttpException(['INVALID_QUANTITY'])).toBeInstanceOf(
-      BadRequestException,
-    );
+    expect(exception).toBeInstanceOf(BadRequestException);
+    expect(exception.getStatus()).toBe(HttpStatus.BAD_REQUEST);
+    expect(exception.message).toBe('UNKNOWN_CODE');
   });
 });

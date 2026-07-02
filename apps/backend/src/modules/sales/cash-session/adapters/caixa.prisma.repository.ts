@@ -55,10 +55,28 @@ export class CaixaPrismaRepository implements CaixaRepository {
     return this.toDomain(row);
   }
 
-  async abrirSessao(sessao: SessaoCaixa): Promise<Result<SessaoCaixa>> {
+  async abrirSessao(
+    sessao: SessaoCaixa,
+    movimentacaoAbertura: MovimentacaoCaixa,
+  ): Promise<Result<SessaoCaixa>> {
     try {
-      const row = await this.prisma.client.sessaoCaixa.create({
-        data: this.fromDomain(sessao),
+      // RN01: the session and its automatic `ABERTURA` movement are persisted in
+      // the same transaction — a session never exists without its opening record.
+      const row = await this.prisma.runInTransaction(async ({ client }) => {
+        const created = await client.sessaoCaixa.create({
+          data: this.fromDomain(sessao),
+        });
+        await client.movimentacaoCaixa.create({
+          data: {
+            id: movimentacaoAbertura.id,
+            sessaoId: movimentacaoAbertura.sessaoId,
+            tipo: movimentacaoAbertura.tipo,
+            valor: centsToDecimal(movimentacaoAbertura.valor),
+            observacao: movimentacaoAbertura.observacao,
+            criadaEm: movimentacaoAbertura.criadaEm,
+          },
+        });
+        return created;
       });
       return this.toDomain(row);
     } catch (error) {
@@ -160,7 +178,7 @@ export class CaixaPrismaRepository implements CaixaRepository {
   }
 
   private toDomain(row: SessaoCaixaRow): Result<SessaoCaixa> {
-    return SessaoCaixa.restore({
+    return SessaoCaixa.hydrate({
       id: row.id,
       operadorId: row.operadorId,
       status: row.status as StatusSessaoCaixa,
@@ -184,14 +202,19 @@ export class CaixaPrismaRepository implements CaixaRepository {
       criadaEm: row.criadaEm,
     };
 
-    return row.tipo === TipoMovimentacaoCaixa.VENDA
-      ? MovimentacaoCaixa.criarVenda(props)
-      : MovimentacaoCaixa.criar(
+    switch (row.tipo) {
+      case TipoMovimentacaoCaixa.VENDA:
+        return MovimentacaoCaixa.criarVenda(props);
+      case TipoMovimentacaoCaixa.ABERTURA:
+        return MovimentacaoCaixa.abertura(props);
+      default:
+        return MovimentacaoCaixa.criar(
           row.tipo as
             | TipoMovimentacaoCaixa.SUPRIMENTO
             | TipoMovimentacaoCaixa.SANGRIA,
           props,
         );
+    }
   }
 
   private mapError(error: unknown): Result<SessaoCaixa> {

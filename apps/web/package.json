@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "check-types": "tsc --noEmit",
+    "test:e2e": "playwright test",
     "test": "vitest run"
   },
   "dependencies": {
@@ -43,10 +44,12 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4.3.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@testing-library/user-event": "^14.5.2",
+    "@playwright/test": "^1.61.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

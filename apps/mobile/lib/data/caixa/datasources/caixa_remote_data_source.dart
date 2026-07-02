@@ -31,4 +31,11 @@ abstract interface class CaixaRemoteDataSource {
   Future<ResumoSessaoDto> getResumo(String sessaoId);
 
   Future<List<MovimentacaoCaixaDto>> listMovimentacoes(String sessaoId);
+
+  /// `GET /caixa/minhas` — the caller's own sessions, with optional
+  /// `status`/`from`/`to` query filters.
+  Future<List<SessaoCaixaDto>> listMinhas(Map<String, dynamic> query);
+
+  /// `GET /caixa/:id`.
+  Future<SessaoCaixaDto> getSessao(String sessaoId);
 }

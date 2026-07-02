@@ -12,8 +12,15 @@ import 'view_model/abrir_caixa_cubit.dart';
 import 'view_model/abrir_caixa_state.dart';
 
 /// Opens a cash session with a starting float (`valorAbertura >= 0`).
+///
+/// On load it pre-checks for an already-open session; when one exists the form
+/// is blocked and the operator is led to the active session instead (the API
+/// stays authoritative with `CAIXA_JA_ABERTO` on submit).
 class AbrirCaixaPage extends StatefulWidget {
-  const AbrirCaixaPage({super.key});
+  const AbrirCaixaPage({super.key, this.onGoToActiveSession});
+
+  /// Navigates to the already-open session found by the preventive check.
+  final void Function(String sessaoId)? onGoToActiveSession;
 
   @override
   State<AbrirCaixaPage> createState() => _AbrirCaixaPageState();
@@ -23,6 +30,12 @@ class _AbrirCaixaPageState extends State<AbrirCaixaPage> {
   late final AbrirCaixaCubit _cubit = getIt<AbrirCaixaCubit>();
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _cubit.checkOpenSession();
+  }
 
   @override
   void dispose() {
@@ -56,6 +69,15 @@ class _AbrirCaixaPageState extends State<AbrirCaixaPage> {
           }
         },
         builder: (context, state) {
+          if (state.isChecking) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (state.isBlocked && state.activeSession != null) {
+            return _AlreadyOpenBlock(
+              onGoToSession: () =>
+                  widget.onGoToActiveSession?.call(state.activeSession!.id),
+            );
+          }
           return SingleChildScrollView(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Form(
@@ -94,6 +116,48 @@ class _AbrirCaixaPageState extends State<AbrirCaixaPage> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Blocked state shown when the operator already has an open session: no form,
+/// just a path to the active session.
+class _AlreadyOpenBlock extends StatelessWidget {
+  const _AlreadyOpenBlock({required this.onGoToSession});
+
+  final VoidCallback onGoToSession;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Icon(Icons.lock_outline, size: 64, color: theme.colorScheme.primary),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            l10n.caixaAlreadyOpenTitle,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleLarge,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            l10n.caixaAlreadyOpenMessage,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          PrimaryButton(
+            label: l10n.caixaGoToSessionAction,
+            onPressed: onGoToSession,
+          ),
+        ],
       ),
     );
   }

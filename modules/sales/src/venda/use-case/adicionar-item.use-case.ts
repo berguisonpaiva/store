@@ -1,11 +1,14 @@
 import { Result, UseCase } from '@repo/shared'
 import { AdicionarItemInputDTO, toVendaDTO, VendaDTO } from '../dto'
 import { VendaError } from '../errors'
-import { EstoqueGateway, VendasRepository } from '../provider'
+import { EstoqueGateway, VariacaoGateway, VendasRepository } from '../provider'
 import { VendaUseCaseBase } from './venda-use-case.base'
 
-/// Adds an item to an `ABERTA` sale, capturing `precoUnitario` as a snapshot
-/// (RF-VND-03). Rejects writes to a `CONCLUIDA` sale with `SALE_ALREADY_FINALIZED`.
+/// Adds an item to an `ABERTA` sale, resolving the variation through
+/// `VariacaoGateway.buscarParaVenda` and capturing its current `preco` as the
+/// `precoUnitario` snapshot (RF-VND-03/RN10). An unresolved variation fails with
+/// `VARIACAO_NAO_ENCONTRADA`; an inactive one with `VARIACAO_INATIVA`. Rejects
+/// writes to a `CONCLUIDA` sale with `SALE_ALREADY_FINALIZED`.
 ///
 /// RN09 pre-check: before committing the line, the EFFECTIVE resulting quantity of
 /// the variation in this sale (existing lines of the same `variacaoId` + the new
@@ -16,6 +19,7 @@ import { VendaUseCaseBase } from './venda-use-case.base'
 export class AdicionarItem extends VendaUseCaseBase implements UseCase<AdicionarItemInputDTO, VendaDTO> {
   constructor(
     repository: VendasRepository,
+    private readonly variacaoGateway: VariacaoGateway,
     private readonly estoqueGateway: EstoqueGateway,
   ) {
     super(repository)
@@ -25,6 +29,15 @@ export class AdicionarItem extends VendaUseCaseBase implements UseCase<Adicionar
     const venda = await this.loadVenda(input.vendaId)
     if (venda.isFailure) {
       return venda.withFail
+    }
+
+    // RN10: only an existing, active variation can be sold; its price is the snapshot.
+    const variacao = await this.variacaoGateway.buscarParaVenda(input.variacaoId)
+    if (!variacao) {
+      return Result.fail(VendaError.VARIACAO_NAO_ENCONTRADA)
+    }
+    if (!variacao.ativa) {
+      return Result.fail(VendaError.VARIACAO_INATIVA)
     }
 
     // RN09 pre-check on the EFFECTIVE resulting quantity for this variation.
@@ -42,7 +55,7 @@ export class AdicionarItem extends VendaUseCaseBase implements UseCase<Adicionar
       venda.instance.adicionarItem({
         variacaoId: input.variacaoId,
         quantidade: input.quantidade,
-        precoUnitario: input.precoUnitario,
+        precoUnitario: variacao.preco,
       }),
     )
     if (updated.isFailure) {

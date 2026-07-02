@@ -23,10 +23,10 @@ export class FecharCaixa implements UseCase<FecharCaixaInputDTO, FecharCaixaResu
       return Result.fail(CaixaError.CAIXA_NAO_ENCONTRADO)
     }
     // RN02: only the session owner operates it.
-    if (sessao.instance.operadorId !== input.usuarioId) {
+    if (!sessao.instance.pertenceAoUsuario(input.usuarioId)) {
       return Result.fail(CaixaError.NAO_E_DONO_DO_CAIXA)
     }
-    if (!sessao.instance.aberta) {
+    if (!sessao.instance.isAberta()) {
       return Result.fail(CaixaError.CAIXA_JA_FECHADO)
     }
 

@@ -1,6 +1,8 @@
 import {
   Controller,
+  ForbiddenException,
   Get,
+  NotFoundException,
   Param,
   ParseUUIDPipe,
   Query,
@@ -17,6 +19,7 @@ import {
 import {
   CaixaAbertoDoOperador,
   CaixaActorDTO,
+  CaixaError,
   ListarMovimentacoes,
   ListarVendas,
   PapelCaixa,
@@ -36,6 +39,7 @@ import { CaixaPrismaQuery } from './adapters/caixa.prisma.query';
 import { centsToReais } from './adapters/money';
 import {
   ListMovimentacoesQueryDto,
+  ListarMinhasSessoesQueryDto,
   ListarSessoesQueryDto,
   MovimentacaoOutDTO,
   ResumoSessaoOutDTO,
@@ -95,6 +99,37 @@ export class CaixaQueriesController {
       await this.caixaAbertoDoOperador.execute({ operadorId }),
     );
     return dto ? this.toSessaoOut(dto) : null;
+  }
+
+  // NOTE: literal routes (`/aberto`, `/minhas`) MUST be declared before `/:id`
+  // so Nest does not swallow them as a session id.
+  @Get('minhas')
+  @Papeis(UserRole.ADMIN, UserRole.OPERADOR)
+  @ApiOperation({
+    summary:
+      "List the caller's OWN sessions (any role, paginated, optional filters)",
+  })
+  @ApiOkResponse({ description: "Caller's sessions page" })
+  async minhas(
+    @CurrentUser('id') usuarioId: string,
+    @Query() query: ListarMinhasSessoesQueryDto,
+  ): Promise<PaginatedResultDTO<SessaoOutDTO>> {
+    // Reuses the ADMIN list-all read, but the scope is ALWAYS the caller — there
+    // is no `usuarioId` filter on this route (RN03).
+    const page = unwrap(
+      await this.caixaQuery.listarSessoes({
+        page: query.page,
+        pageSize: query.pageSize,
+        usuarioId,
+        status: query.status,
+        from: query.from ? new Date(query.from) : undefined,
+        to: query.to ? new Date(query.to) : undefined,
+      }),
+    );
+    return {
+      data: page.data.map((dto) => this.toSessaoOut(dto)),
+      meta: page.meta,
+    };
   }
 
   @Get(':id/resumo')
@@ -205,6 +240,32 @@ export class CaixaQueriesController {
       data: page.data.map((venda) => toVendaOut(venda)),
       meta: page.meta,
     };
+  }
+
+  // Declared LAST among the GET routes so it never shadows the literal
+  // (`/aberto`, `/minhas`) or the deeper `/:id/...` routes.
+  @Get(':id')
+  @Papeis(UserRole.ADMIN, UserRole.OPERADOR)
+  @ApiOperation({
+    summary: 'Fetch a session by id (owner or ADMIN, open or closed)',
+  })
+  @ApiOkResponse({ description: 'The session', type: SessaoOutDTO })
+  @ApiNotFoundResponse({ description: 'CAIXA_NAO_ENCONTRADO' })
+  @ApiForbiddenResponse({ description: 'ACESSO_NEGADO (non-owner, non-ADMIN)' })
+  async porId(
+    @CurrentUser('id') usuarioId: string,
+    @CurrentUser('role') role: UserRole,
+    @Param('id', ParseUUIDPipe) sessaoId: string,
+  ): Promise<SessaoOutDTO> {
+    const dto = unwrap(await this.caixaQuery.sessaoPorId(sessaoId));
+    if (!dto) {
+      throw new NotFoundException(CaixaError.CAIXA_NAO_ENCONTRADO);
+    }
+    // RN03/RN04: a non-ADMIN may only read a session they own.
+    if (role !== UserRole.ADMIN && dto.operadorId !== usuarioId) {
+      throw new ForbiddenException(CaixaError.ACESSO_NEGADO);
+    }
+    return this.toSessaoOut(dto);
   }
 
   private toActor(usuarioId: string, role: UserRole): CaixaActorDTO {

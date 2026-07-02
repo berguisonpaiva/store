@@ -4,6 +4,9 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "e2e:stack": "node ./scripts/e2e-stack.mjs up --web",
+    "e2e:stack:reset": "node ./scripts/e2e-stack.mjs reset",
+    "e2e:stack:smoke": "node ./scripts/e2e-stack.mjs smoke",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",

@@ -43,7 +43,7 @@ describe('Caixa controllers', () => {
   const resumoSessao = { execute: jest.fn() };
   const listarMovimentacoes = { execute: jest.fn() };
   const listarVendas = { execute: jest.fn() };
-  const caixaQuery = { listarSessoes: jest.fn() };
+  const caixaQuery = { listarSessoes: jest.fn(), sessaoPorId: jest.fn() };
 
   beforeEach(async () => {
     jest.resetAllMocks();
@@ -343,6 +343,109 @@ describe('Caixa controllers', () => {
     expect(out.meta.total).toBe(1);
   });
 
+  // --- GET /caixa/minhas (caller-scoped list, any role) -----------------------
+
+  test('minhas forces the usuarioId filter to the caller and maps to reais', async () => {
+    caixaQuery.listarSessoes.mockResolvedValue(
+      Result.ok({
+        data: [
+          {
+            id: SESSAO_ID,
+            operadorId: OPERADOR_ID,
+            status: StatusSessaoCaixa.FECHADA,
+            valorAbertura: 10000,
+            valorFechamento: 15000,
+            abertaEm: new Date('2026-06-30T10:00:00Z'),
+            fechadaEm: new Date('2026-06-30T18:00:00Z'),
+          },
+        ],
+        meta: { page: 1, pageSize: 20, total: 1, totalPages: 1 },
+      }),
+    );
+
+    const out = await queries.minhas(OPERADOR_ID, {
+      page: 2,
+      pageSize: 10,
+      status: StatusSessaoCaixa.FECHADA,
+      from: '2026-06-01T00:00:00Z',
+      to: '2026-07-01T00:00:00Z',
+    });
+
+    // The scope is ALWAYS the caller — there is no usuarioId filter on this route.
+    expect(caixaQuery.listarSessoes).toHaveBeenCalledWith({
+      page: 2,
+      pageSize: 10,
+      usuarioId: OPERADOR_ID,
+      status: StatusSessaoCaixa.FECHADA,
+      from: new Date('2026-06-01T00:00:00Z'),
+      to: new Date('2026-07-01T00:00:00Z'),
+    });
+    expect(out.data[0].operadorId).toBe(OPERADOR_ID);
+    expect(out.data[0].valorAbertura).toBe(100);
+    expect(out.meta.total).toBe(1);
+  });
+
+  // --- GET /caixa/:id (owner or ADMIN) ----------------------------------------
+
+  const sessaoDTO = (overrides: Record<string, unknown> = {}) => ({
+    id: SESSAO_ID,
+    operadorId: OPERADOR_ID,
+    status: StatusSessaoCaixa.ABERTA,
+    valorAbertura: 10000,
+    valorFechamento: null,
+    abertaEm: new Date('2026-06-30T10:00:00Z'),
+    fechadaEm: null,
+    ...overrides,
+  });
+
+  test('porId: owner reads their own session (money in reais)', async () => {
+    caixaQuery.sessaoPorId.mockResolvedValue(Result.ok(sessaoDTO()));
+
+    const out = await queries.porId(OPERADOR_ID, UserRole.OPERADOR, SESSAO_ID);
+
+    expect(caixaQuery.sessaoPorId).toHaveBeenCalledWith(SESSAO_ID);
+    expect(out.id).toBe(SESSAO_ID);
+    expect(out.operadorId).toBe(OPERADOR_ID);
+    expect(out.valorAbertura).toBe(100);
+    expect(out.status).toBe(StatusSessaoCaixa.ABERTA);
+  });
+
+  test('porId: ADMIN reads another operator session', async () => {
+    caixaQuery.sessaoPorId.mockResolvedValue(
+      Result.ok(sessaoDTO({ operadorId: OTHER_ID })),
+    );
+
+    const out = await queries.porId(OPERADOR_ID, UserRole.ADMIN, SESSAO_ID);
+
+    expect(out.operadorId).toBe(OTHER_ID);
+  });
+
+  test('porId: non-ADMIN reading another operator session -> 403 (ACESSO_NEGADO)', async () => {
+    caixaQuery.sessaoPorId.mockResolvedValue(
+      Result.ok(sessaoDTO({ operadorId: OTHER_ID })),
+    );
+
+    await expect(
+      queries.porId(OPERADOR_ID, UserRole.OPERADOR, SESSAO_ID),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  test('porId: missing session -> 404 (CAIXA_NAO_ENCONTRADO)', async () => {
+    caixaQuery.sessaoPorId.mockResolvedValue(Result.ok(null));
+
+    await expect(
+      queries.porId(OPERADOR_ID, UserRole.ADMIN, SESSAO_ID),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  test('queries controller declares literal routes (aberto, minhas) before /:id', () => {
+    const methods = Object.getOwnPropertyNames(
+      CaixaQueriesController.prototype,
+    );
+    expect(methods.indexOf('aberto')).toBeLessThan(methods.indexOf('porId'));
+    expect(methods.indexOf('minhas')).toBeLessThan(methods.indexOf('porId'));
+  });
+
   // --- GET /caixa/:id/vendas (sale-api contract, RN03/RN04) ------------------
 
   const okResumo = (overrides: Record<string, unknown> = {}) =>
@@ -504,14 +607,14 @@ describe('Caixa controllers', () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
-  test('fechar maps VENDA_PENDENTE_NO_FECHAMENTO -> 422', async () => {
+  test('fechar maps VENDA_PENDENTE_NO_FECHAMENTO -> 409', async () => {
     fecharCaixa.execute.mockResolvedValue(
       Result.fail(CaixaError.VENDA_PENDENTE_NO_FECHAMENTO),
     );
 
     await expect(
       commands.fechar(OPERADOR_ID, SESSAO_ID, { valorFechamento: 100 }),
-    ).rejects.toBeInstanceOf(UnprocessableEntityException);
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 
   test('resumo maps ACESSO_NEGADO -> 403', async () => {

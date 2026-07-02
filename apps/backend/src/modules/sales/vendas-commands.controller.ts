@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   HttpCode,
+  NotFoundException,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -14,6 +15,7 @@ import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -23,12 +25,15 @@ import {
 import { UserRole } from '@repo/auth';
 import {
   AdicionarItem,
+  AdicionarPagamento,
+  AlterarQuantidadeItem,
   AplicarDesconto,
   CancelarVenda,
   CriarVenda,
   FinalizarVenda,
   RemoverItem,
   TipoDesconto,
+  VendaError,
 } from '@repo/sales';
 import { JwtGuard } from '../../shared/auth/jwt.guard';
 import { RolesGuard } from '../../shared/auth/roles.guard';
@@ -40,6 +45,8 @@ import { VariacaoPrismaReader } from './adapters/variacao.prisma.reader';
 import { toVendaOut } from './adapters/venda.mapper';
 import {
   AdicionarItemInDTO,
+  AdicionarPagamentoInDTO,
+  AlterarQuantidadeItemInDTO,
   AplicarDescontoInDTO,
   CriarVendaInDTO,
   FinalizarVendaInDTO,
@@ -59,7 +66,9 @@ export class VendasCommandsController {
     private readonly criarVenda: CriarVenda,
     private readonly adicionarItem: AdicionarItem,
     private readonly removerItem: RemoverItem,
+    private readonly alterarQuantidadeItem: AlterarQuantidadeItem,
     private readonly aplicarDesconto: AplicarDesconto,
+    private readonly adicionarPagamento: AdicionarPagamento,
     private readonly finalizarVenda: FinalizarVenda,
     private readonly cancelarVenda: CancelarVenda,
     private readonly variacaoReader: VariacaoPrismaReader,
@@ -72,7 +81,7 @@ export class VendasCommandsController {
     summary: 'Open a sale bound to the operator open cash session',
   })
   @ApiCreatedResponse({ description: 'Sale opened', type: VendaOutDTO })
-  @ApiUnprocessableEntityResponse({ description: 'NO_OPEN_CASH_SESSION' })
+  @ApiConflictResponse({ description: 'NO_OPEN_CASH_SESSION' })
   async criar(
     @CurrentUser('id') usuarioId: string,
     @Body() _dto: CriarVendaInDTO,
@@ -85,11 +94,17 @@ export class VendasCommandsController {
   @HttpCode(201)
   @Papeis(UserRole.ADMIN, UserRole.OPERADOR)
   @ApiOperation({
-    summary: 'Add an item resolved by variacaoId, sku, or codigoBarras',
+    summary:
+      'Add an item resolved by variacaoId, sku, or codigoBarras at its current price',
   })
   @ApiCreatedResponse({ description: 'Item added', type: VendaOutDTO })
-  @ApiNotFoundResponse({ description: 'SALE_NOT_FOUND or VARIATION_NOT_FOUND' })
+  @ApiNotFoundResponse({
+    description: 'SALE_NOT_FOUND or VARIACAO_NAO_ENCONTRADA',
+  })
   @ApiConflictResponse({ description: 'SALE_ALREADY_FINALIZED' })
+  @ApiUnprocessableEntityResponse({
+    description: 'VARIACAO_INATIVA or INSUFFICIENT_STOCK',
+  })
   async adicionar(
     @Param('id', ParseUUIDPipe) vendaId: string,
     @Body() dto: AdicionarItemInDTO,
@@ -98,13 +113,15 @@ export class VendasCommandsController {
       throw new BadRequestException('VARIATION_IDENTIFIER_REQUIRED');
     }
 
+    // The reader only translates sku/codigoBarras to the canonical variacaoId;
+    // price and activity are resolved by the domain via `VariacaoGateway` (RN10).
     const resolved = await this.variacaoReader.resolver({
       variacaoId: dto.variacaoId,
       sku: dto.sku,
       codigoBarras: dto.codigoBarras,
     });
     if (!resolved) {
-      throw new BadRequestException('VARIATION_NOT_FOUND');
+      throw new NotFoundException(VendaError.VARIACAO_NAO_ENCONTRADA);
     }
 
     const venda = unwrap(
@@ -112,7 +129,35 @@ export class VendasCommandsController {
         vendaId,
         variacaoId: resolved.variacaoId,
         quantidade: dto.quantidade,
-        precoUnitario: resolved.precoUnitario,
+      }),
+    );
+    return toVendaOut(venda);
+  }
+
+  @Patch(':id/itens/:itemId/quantidade')
+  @HttpCode(200)
+  @Papeis(UserRole.ADMIN, UserRole.OPERADOR)
+  @ApiOperation({
+    summary:
+      'Change the quantity of a line, revalidating available stock (RN09)',
+  })
+  @ApiOkResponse({ description: 'Quantity changed', type: VendaOutDTO })
+  @ApiNotFoundResponse({ description: 'SALE_NOT_FOUND or ITEM_NOT_FOUND' })
+  @ApiForbiddenResponse({ description: 'ACESSO_NEGADO (non-owner)' })
+  @ApiConflictResponse({ description: 'SALE_ALREADY_FINALIZED' })
+  @ApiUnprocessableEntityResponse({ description: 'INSUFFICIENT_STOCK' })
+  async quantidade(
+    @CurrentUser('id') usuarioId: string,
+    @Param('id', ParseUUIDPipe) vendaId: string,
+    @Param('itemId', ParseUUIDPipe) itemId: string,
+    @Body() dto: AlterarQuantidadeItemInDTO,
+  ): Promise<VendaOutDTO> {
+    const venda = unwrap(
+      await this.alterarQuantidadeItem.execute({
+        vendaId,
+        itemId,
+        quantidade: dto.quantidade,
+        usuarioId,
       }),
     );
     return toVendaOut(venda);
@@ -161,6 +206,33 @@ export class VendasCommandsController {
     return toVendaOut(venda);
   }
 
+  @Post(':id/pagamentos')
+  @HttpCode(201)
+  @Papeis(UserRole.ADMIN, UserRole.OPERADOR)
+  @ApiOperation({
+    summary:
+      'Register one incremental payment on an open sale (valor in reais)',
+  })
+  @ApiCreatedResponse({ description: 'Payment registered', type: VendaOutDTO })
+  @ApiNotFoundResponse({ description: 'SALE_NOT_FOUND' })
+  @ApiForbiddenResponse({ description: 'ACESSO_NEGADO (non-owner)' })
+  @ApiConflictResponse({ description: 'SALE_ALREADY_FINALIZED' })
+  async pagamento(
+    @CurrentUser('id') usuarioId: string,
+    @Param('id', ParseUUIDPipe) vendaId: string,
+    @Body() dto: AdicionarPagamentoInDTO,
+  ): Promise<VendaOutDTO> {
+    const venda = unwrap(
+      await this.adicionarPagamento.execute({
+        vendaId,
+        usuarioId,
+        forma: dto.forma,
+        valor: reaisToCents(dto.valor),
+      }),
+    );
+    return toVendaOut(venda);
+  }
+
   @Post(':id/finalizar')
   @HttpCode(200)
   @Papeis(UserRole.ADMIN, UserRole.OPERADOR)
@@ -204,7 +276,7 @@ export class VendasCommandsController {
     type: VendaOutDTO,
   })
   @ApiNotFoundResponse({ description: 'SALE_NOT_FOUND' })
-  @ApiUnprocessableEntityResponse({ description: 'CASH_SESSION_CLOSED' })
+  @ApiConflictResponse({ description: 'CASH_SESSION_CLOSED' })
   async cancelar(
     @Param('id', ParseUUIDPipe) vendaId: string,
   ): Promise<VendaOutDTO> {

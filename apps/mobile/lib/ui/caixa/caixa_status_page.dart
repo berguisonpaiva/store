@@ -37,10 +37,10 @@ class _CaixaStatusPageState extends State<CaixaStatusPage> {
   }
 
   Future<void> _openCash() async {
-    final opened = await context.push<bool>('/caixa/abrir');
-    if (opened == true) {
-      await _cubit.load();
-    }
+    // Reload regardless of the result: the open screen may have been replaced
+    // by the active session (preventive already-open block).
+    await context.push<bool>('/caixa/abrir');
+    await _cubit.load();
   }
 
   Future<void> _goToSession(String sessaoId) async {
@@ -53,7 +53,16 @@ class _CaixaStatusPageState extends State<CaixaStatusPage> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.caixaTitle)),
+      appBar: AppBar(
+        title: Text(l10n.caixaTitle),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: l10n.caixaHistoryTitle,
+            onPressed: () => context.push('/caixa/historico'),
+          ),
+        ],
+      ),
       body: BlocConsumer<CaixaStatusCubit, CaixaStatusState>(
         bloc: _cubit,
         listener: (context, state) {

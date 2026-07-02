@@ -13,7 +13,7 @@ export class InMemoryCaixaRepository implements CaixaRepository {
 
   async findSessaoAbertaByOperador(operadorId: string): Promise<Result<SessaoCaixa | null>> {
     for (const sessao of this.sessoes.values()) {
-      if (sessao.operadorId === operadorId && sessao.aberta) {
+      if (sessao.pertenceAoUsuario(operadorId) && sessao.isAberta()) {
         return Result.ok(sessao)
       }
     }
@@ -24,8 +24,12 @@ export class InMemoryCaixaRepository implements CaixaRepository {
     return Result.ok(this.sessoes.get(sessaoId) ?? null)
   }
 
-  async abrirSessao(sessao: SessaoCaixa): Promise<Result<SessaoCaixa>> {
+  async abrirSessao(
+    sessao: SessaoCaixa,
+    movimentacaoAbertura: MovimentacaoCaixa,
+  ): Promise<Result<SessaoCaixa>> {
     this.sessoes.set(sessao.id, sessao)
+    this.movimentacoes.push(movimentacaoAbertura)
     return Result.ok(sessao)
   }
 

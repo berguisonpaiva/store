@@ -6,8 +6,10 @@ import '../../domain/auth/usecases/sign_in_usecase.dart';
 import '../../domain/auth/usecases/sign_out_usecase.dart';
 import '../../domain/caixa/usecases/abrir_caixa_usecase.dart';
 import '../../domain/caixa/usecases/listar_movimentacoes_usecase.dart';
+import '../../domain/caixa/usecases/listar_sessoes_usecase.dart';
 import '../../domain/caixa/usecases/obter_caixa_aberto_usecase.dart';
 import '../../domain/caixa/usecases/obter_resumo_sessao_usecase.dart';
+import '../../domain/caixa/usecases/obter_sessao_usecase.dart';
 import '../../domain/caixa/usecases/registrar_sangria_usecase.dart';
 import '../../domain/caixa/usecases/registrar_suprimento_usecase.dart';
 import '../../domain/catalog/usecases/find_variation_by_barcode_usecase.dart';
@@ -32,6 +34,8 @@ import '../../domain/vendas/usecases/remover_item_usecase.dart';
 import '../../ui/auth/view_model/auth_session_cubit.dart';
 import '../../ui/auth/view_model/login_cubit.dart';
 import '../../ui/caixa/view_model/abrir_caixa_cubit.dart';
+import '../../ui/caixa/view_model/caixa_detail_cubit.dart';
+import '../../ui/caixa/view_model/caixa_history_cubit.dart';
 import '../../ui/caixa/view_model/caixa_status_cubit.dart';
 import '../../ui/caixa/view_model/sessao_ativa_cubit.dart';
 import '../../ui/home/view_model/home_cubit.dart';
@@ -87,7 +91,10 @@ void registerUiModule(GetIt gi) {
     () => CaixaStatusCubit(obterCaixaAberto: gi<ObterCaixaAbertoUseCase>()),
   );
   gi.registerFactory(
-    () => AbrirCaixaCubit(abrirCaixa: gi<AbrirCaixaUseCase>()),
+    () => AbrirCaixaCubit(
+      abrirCaixa: gi<AbrirCaixaUseCase>(),
+      obterCaixaAberto: gi<ObterCaixaAbertoUseCase>(),
+    ),
   );
   gi.registerFactory(
     () => SessaoAtivaCubit(
@@ -95,6 +102,16 @@ void registerUiModule(GetIt gi) {
       listarMovimentacoes: gi<ListarMovimentacoesUseCase>(),
       registrarSangria: gi<RegistrarSangriaUseCase>(),
       registrarSuprimento: gi<RegistrarSuprimentoUseCase>(),
+    ),
+  );
+  gi.registerFactory(
+    () => CaixaHistoryCubit(listarSessoes: gi<ListarSessoesUseCase>()),
+  );
+  gi.registerFactory(
+    () => CaixaDetailCubit(
+      obterSessao: gi<ObterSessaoUseCase>(),
+      obterResumo: gi<ObterResumoSessaoUseCase>(),
+      listarMovimentacoes: gi<ListarMovimentacoesUseCase>(),
     ),
   );
 

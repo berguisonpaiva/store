@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import {
   AdicionarItem,
+  AdicionarPagamento,
+  AlterarQuantidadeItem,
   AplicarDesconto,
   BuscarVenda,
   CancelarVenda,
@@ -11,6 +13,7 @@ import {
   ListarVendas,
   RemoverItem,
   ResumoVendas,
+  VariacaoGateway,
   VendasQuery,
   VendasRepository,
 } from '@repo/sales';
@@ -30,6 +33,7 @@ import { VendasQueriesController } from './vendas-queries.controller';
 /// value, so the gateways are bound by string token).
 const ESTOQUE_GATEWAY = 'VENDAS_ESTOQUE_GATEWAY';
 const CAIXA_GATEWAY = 'VENDAS_CAIXA_GATEWAY';
+const VARIACAO_GATEWAY = 'VENDAS_VARIACAO_GATEWAY';
 
 /// Composition root for the PDV sales module.
 ///
@@ -37,6 +41,7 @@ const CAIXA_GATEWAY = 'VENDAS_CAIXA_GATEWAY';
 /// - `VendasQuery`      -> `VendasPrismaQuery`
 /// - `EstoqueGateway`   -> `EstoqueGatewayAdapter` (delegates to the estoque sales port)
 /// - `CaixaGateway`     -> `CaixaGatewayAdapter` (delegates to the caixa cash port)
+/// - `VariacaoGateway`  -> `VariacaoPrismaReader` (catalog price/active read, RN10)
 ///
 /// `finalizar-venda` / `cancelar-venda` receive the `PrismaService` as the
 /// `TransactionManager`, so repository writes commit/roll back together with the
@@ -52,6 +57,7 @@ const CAIXA_GATEWAY = 'VENDAS_CAIXA_GATEWAY';
     CaixaGatewayAdapter,
     { provide: ESTOQUE_GATEWAY, useExisting: EstoqueGatewayAdapter },
     { provide: CAIXA_GATEWAY, useExisting: CaixaGatewayAdapter },
+    { provide: VARIACAO_GATEWAY, useExisting: VariacaoPrismaReader },
     {
       provide: CriarVenda,
       useFactory: (repo: VendasRepository, caixa: CaixaGateway) =>
@@ -60,13 +66,27 @@ const CAIXA_GATEWAY = 'VENDAS_CAIXA_GATEWAY';
     },
     {
       provide: AdicionarItem,
-      useFactory: (repo: VendasRepository, estoque: EstoqueGateway) =>
-        new AdicionarItem(repo, estoque),
-      inject: [VendasPrismaRepository, ESTOQUE_GATEWAY],
+      useFactory: (
+        repo: VendasRepository,
+        variacao: VariacaoGateway,
+        estoque: EstoqueGateway,
+      ) => new AdicionarItem(repo, variacao, estoque),
+      inject: [VendasPrismaRepository, VARIACAO_GATEWAY, ESTOQUE_GATEWAY],
     },
     {
       provide: RemoverItem,
       useFactory: (repo: VendasRepository) => new RemoverItem(repo),
+      inject: [VendasPrismaRepository],
+    },
+    {
+      provide: AlterarQuantidadeItem,
+      useFactory: (repo: VendasRepository, estoque: EstoqueGateway) =>
+        new AlterarQuantidadeItem(repo, estoque),
+      inject: [VendasPrismaRepository, ESTOQUE_GATEWAY],
+    },
+    {
+      provide: AdicionarPagamento,
+      useFactory: (repo: VendasRepository) => new AdicionarPagamento(repo),
       inject: [VendasPrismaRepository],
     },
     {
