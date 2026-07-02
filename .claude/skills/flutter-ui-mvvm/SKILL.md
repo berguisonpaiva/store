@@ -11,6 +11,7 @@ Use this skill to build presentation code that stays testable, declarative, and 
 
 - Read `references/ui-mvvm-checklist.md` before implementing or reviewing UI features.
 - Read `references/source-map.md` when you need to trace which `.claude` rules informed this skill.
+- Read `../flutter-clean-architecture/references/cqrs-pattern.md` when a ViewModel loads projections or submits commands.
 - Use `agents/ui-mvvm-specialist.md` when delegating screen, ViewModel, form, or widget review.
 
 ## Responsibility
@@ -67,10 +68,17 @@ Rules:
 
 - UI may know domain.
 - UI must not know data.
+- ViewModels must not call repositories or queries directly; inject command/query use cases so UI does not choose data-access semantics.
 - UI must not contain heavy business rules.
 - UI translates Failures into localized messages.
 - ViewModel does not import widgets.
 - Child widgets do not receive a whole ViewModel if they only need values/callbacks.
+
+CQRS stays behind the use-case boundary:
+
+- Load/list/detail/watch methods call query use cases and receive read models.
+- Create/update/delete methods call command use cases and submit command params/entities as defined by domain.
+- State may contain read models intended for presentation, but never data DTOs, DAO rows, or concrete Query/Repository adapters.
 
 ## ViewModel/Cubit Rules
 
@@ -293,6 +301,7 @@ Rules:
 ## Review Checklist
 
 - UI does not import data.
+- ViewModel depends on use cases, not Repository/Query adapters.
 - UI does not import app routing.
 - View receives ViewModel and callbacks by constructor.
 - ViewModel has no Flutter/Material imports.

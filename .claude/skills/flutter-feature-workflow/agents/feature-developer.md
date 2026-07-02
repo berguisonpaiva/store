@@ -21,4 +21,5 @@ Return:
 - Keep tests passing before advancing when feasible.
 - Do not make new architecture decisions silently.
 - Follow DI, MVVM, data, and design-system conventions.
+- Keep command Repositories separate from read Query adapters and read models.
 - Do not keep components inline inside Page/LandingPage/Screen/View files; extract them into feature or shared `widgets/`.

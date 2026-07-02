@@ -1,6 +1,6 @@
 ---
 name: flutter-app-composition
-description: Use this skill whenever creating, changing, or reviewing Flutter `lib/app` code: composition root, get_it manual dependency injection, routing, GoRouter, route guards, startup/bootstrap, observers, deep links, app config, and DI module ordering. Trigger for any request mentioning app layer, DI, get_it, router, GoRouter, bootstrap, startup, app.dart, or route wrappers.
+description: Use this skill whenever creating, changing, or reviewing Flutter `lib/app` code: composition root, get_it dependency injection for Repository/Query/use-case CQRS flows, routing, GoRouter, route guards, startup/bootstrap, observers, deep links, app config, and DI module ordering. Trigger for app layer, DI, get_it, query registration, router, GoRouter, bootstrap, startup, app.dart, or route wrappers.
 ---
 
 # Flutter App Composition
@@ -11,6 +11,7 @@ Use this skill to keep app-level wiring explicit, testable, and free from busine
 
 - Read `references/app-composition-checklist.md` before implementing or reviewing routing, DI, or startup.
 - Read `references/source-map.md` when you need to trace which `.claude` rules informed this skill.
+- Read `../flutter-clean-architecture/references/cqrs-pattern.md` when wiring a context that reads or writes persisted state.
 - Use `agents/app-composition-specialist.md` when delegating DI/routing/bootstrap review.
 
 ## Responsibility
@@ -81,8 +82,8 @@ Rules:
 - Other modules import that same `getIt`.
 - `injection.dart` only orchestrates modules; it should not register individual dependencies.
 - Register core and database before contexts.
-- Register data sources, repositories, and DAOs as `registerLazySingleton`.
-- Register use cases and ViewModels/Cubits as `registerFactory`.
+- Register data sources, Repository and Query implementations, and DAOs as `registerLazySingleton`.
+- Register command/query use cases and ViewModels/Cubits as `registerFactory`.
 - Always use lambdas: `() => ClassName(getIt())`.
 - Do not use `ClassName.new`.
 - Do not use `new ClassName()`.
@@ -105,8 +106,9 @@ Resolve async resources before registering because `registerLazySingleton` facto
 Each `[context]_module.dart` registers the whole context:
 
 - Data sources.
-- Repository implementations.
-- Use cases.
+- Repository implementations for commands/entity invariants.
+- Query implementations for read models/projections.
+- Command and query use cases.
 - Domain services when needed.
 - ViewModels/Cubits.
 
@@ -218,6 +220,7 @@ Keep first render fast. Heavy SDK initialization or network work should be lazy/
 - Modules register in correct order.
 - Async resources are awaited before synchronous factories.
 - Use cases and ViewModels are factories.
-- Data sources, repositories, DAOs, and core wrappers are lazy singletons.
+- Data sources, Repository and Query implementations, DAOs, and core wrappers are lazy singletons.
+- ViewModels receive use cases, never concrete Repository/Query implementations.
 - UI receives navigation callbacks; it does not import `AppRoutes`.
 - Router is top-level `final` when static, factory when dynamic.

@@ -12,6 +12,7 @@ Return:
 
 - Test scope by layer.
 - Required fakes/mocks.
+- CQRS split between fake Repositories, fake Queries, and fake use cases.
 - Widget-test scenarios by risk.
 - Flakiness risks.
 - Helper setup needs.
@@ -23,4 +24,5 @@ Return:
 - Views are tested by constructor injection.
 - Use `MockCubit` for Cubit/ViewModel widget tests.
 - Test user-visible behavior over implementation details.
+- Command tests assert writes/invariants; Query tests assert projections and no write side effects.
 - Avoid flaky `pumpAndSettle` around infinite animation/toast.

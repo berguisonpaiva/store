@@ -1,6 +1,6 @@
 ---
 name: flutter-code-review
-description: Use this skill whenever reviewing Flutter code against Clean Architecture, DDD, MVVM, Dart style, layer boundaries, tests, anti-patterns, design system rules, get_it, fpdart, Drift, and flutter_bloc conventions. Trigger for any request saying review, audit, check, validar, revisar, code review, PR review, or "see if this follows the architecture" in a Flutter project.
+description: Use this skill whenever reviewing Flutter code against Clean Architecture, DDD, CQRS, MVVM, Dart style, layer boundaries, tests, anti-patterns, design system rules, get_it, fpdart, Drift, and flutter_bloc conventions. Trigger for review, audit, CQRS validation, command/query separation, code review, PR review, or "see if this follows the architecture" in Flutter.
 ---
 
 # Flutter Code Review
@@ -11,6 +11,7 @@ Use this skill to review Flutter code with a bug/risk-first stance. Lead with fi
 
 - Read `references/review-checklist.md` before a full code review.
 - Read `references/source-map.md` when you need to trace which `.claude` rules informed this skill.
+- Read `../flutter-clean-architecture/references/cqrs-pattern.md` before reviewing persisted reads/writes.
 - Use `agents/reviewer-specialist.md` when delegating a strict review-only pass.
 
 ## Review Stance
@@ -37,6 +38,16 @@ Architecture:
 - Core does not know feature-specific domain.
 - App wires dependencies but does not contain heavy business rules.
 
+CQRS:
+
+- Repositories own create/update/delete and entity reads required by command invariants.
+- Queries own details/lists/filters/pagination/joins/aggregates and return framework-free read models.
+- Queries never mutate state; Repositories do not return consumer projections.
+- Data DTOs, DAO rows, QueryRows, HTTP responses, and SDK types do not leak into Query contracts/read models.
+- Query adapters map directly to read models when entity reconstruction is unnecessary.
+- Reactive Query adapters convert technical Exceptions to Failures on the stream error channel.
+- ViewModels consume command/query use cases, not Repository/Query adapters.
+
 Failure/Exception:
 
 - Data sources throw Exceptions.
@@ -57,7 +68,7 @@ DI:
 - No `injectable` unless explicitly adopted.
 - `injection.dart` only orchestrates modules.
 - Use cases and ViewModels registered as factories.
-- Data sources, repositories, DAOs, and core wrappers registered as lazy singletons.
+- Data sources, Repository and Query implementations, DAOs, and core wrappers registered as lazy singletons.
 
 UI/MVVM:
 
@@ -111,6 +122,7 @@ Tests:
 
 - Domain rules tested without Flutter.
 - Use cases tested with fake repositories.
+- Command use cases tested with fake Repositories; query use cases tested with fake Queries.
 - Repositories/data sources tested when behavior changed.
 - ViewModels tested with fake use cases.
 - Views tested with fake/mock ViewModels via constructor.
@@ -122,6 +134,9 @@ Flag these strongly:
 
 - Domain importing Flutter.
 - UI importing data or app routing.
+- Projection reads implemented as Repository methods instead of Queries.
+- Query contracts that return infrastructure DTOs/rows or perform writes.
+- ViewModels injecting Repository/Query adapters directly.
 - ViewModel importing Flutter/Material.
 - View resolving `getIt` internally.
 - Route with `load()` receiving a ready ViewModel.

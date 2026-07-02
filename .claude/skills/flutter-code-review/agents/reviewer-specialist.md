@@ -24,4 +24,5 @@ If no issues are found, state that clearly and list residual risks such as tests
 - Cite file and line.
 - Prefer real risks over style nits.
 - Check layers, DI, data, UI, tests, design system, and performance basics.
+- Check CQRS: Repository commands/entity invariants, Query read projections, no query writes, no infrastructure leakage, and ViewModels behind use cases.
 - Flag Page/LandingPage/Screen/View files that accumulate components inline instead of extracting them to `widgets/`, because that violates Clean Code/SOLID separation of responsibilities.

@@ -1,6 +1,6 @@
 ---
 name: flutter-clean-architecture
-description: Use this skill whenever planning, implementing, or reviewing a Flutter app with Clean Architecture, DDD, MVVM, layered modules, dependency rules, Failure vs Exception, cross-cutting features, or project structure decisions. This is the umbrella architecture skill for Flutter projects and should trigger even when the user only says "organize the app", "separate layers", "create the structure", "DDD", "domain/data/ui/app/core", or "clean architecture".
+description: Use this skill whenever planning, implementing, or reviewing a Flutter app with Clean Architecture, DDD, CQRS, MVVM, layered modules, dependency rules, Failure vs Exception, cross-cutting features, or project structure decisions. This is the umbrella architecture skill for Flutter projects and should trigger even when the user says "organize the app", "separate layers", "commands and queries", "read model", "DDD", "domain/data/ui/app/core", or "clean architecture".
 ---
 
 # Flutter Clean Architecture
@@ -11,6 +11,7 @@ Use this skill to keep Flutter projects organized around clear dependency direct
 
 - Read `references/source-map.md` when you need to trace which `.claude` rules informed this skill.
 - Read `references/review-checklist.md` before a broad architecture audit or PR review.
+- Read `references/cqrs-pattern.md` before designing or reviewing repositories, queries, read models, or data-access use cases.
 - Use `agents/architecture-specialist.md` when delegating an architecture-only planning/review pass.
 
 ## Layer Map
@@ -21,8 +22,8 @@ Use these layers unless the existing project has a stronger local convention:
 lib/
   app/     composition root, routing, DI, bootstrap
   core/    generic technical wrappers and utilities
-  domain/  business rules, entities, value objects, use cases, contracts
-  data/    repository implementations, data sources, DTOs, mappers, persistence
+  domain/  business rules, entities, value objects, use cases, repositories, queries, read models
+  data/    repository/query implementations, data sources, DTOs, mappers, persistence
   ui/      views, routes/wrappers, viewmodels/cubits, widgets, themes, l10n usage
 ```
 
@@ -40,16 +41,27 @@ domain -> no app layer
 
 `domain/`:
 
-- Owns business language, entities, value objects, use cases, policies, repository contracts, and Failures.
+- Owns business language, entities, value objects, use cases, policies, Repository/Query contracts, read models, and Failures.
 - Must not import Flutter, data, core, ui, or app.
 - Must be testable without framework setup.
 
 `data/`:
 
-- Implements domain repository contracts.
+- Implements domain Repository and Query contracts.
 - Owns data sources, DTOs/models, mappers, Exceptions, Drift schema, DAOs, and persistence details.
 - May depend on domain and core.
 - Must not depend on ui or app.
+
+## CQRS Boundaries
+
+Classify each operation before choosing a contract:
+
+- Command or entity load required by a command -> Repository.
+- Consumer-oriented read, list, detail, filter, pagination, join, or aggregate -> Query returning a read model.
+
+Repositories persist aggregates and may load entities to preserve write invariants. Queries never mutate state and do not reconstruct entities unless the read contract genuinely requires domain behavior. Data implements both contracts; UI consumes query and command use cases rather than data-access contracts directly.
+
+Use `Future<Either<Failure, T>>` for one-shot queries and commands. Use `Stream<T>` for reactive queries unless the project explicitly standardizes a different stream error contract. CQRS here does not require separate databases, a command bus, event sourcing, or additional packages.
 
 `core/`:
 
@@ -182,6 +194,7 @@ Before writing or approving code:
 - Does each class live in the layer that owns its responsibility?
 - Does domain stay framework-free?
 - Are Exceptions converted to Failures at repository boundaries?
+- Are reads implemented as Query/read-model projections while Repositories remain command/entity oriented?
 - Are cross-cutting concerns split by technical wrapper, domain contract, data implementation, app wiring, and UI trigger?
 - Is each public class traceable to its own file?
 - Are package imports consistent with the dependency direction?

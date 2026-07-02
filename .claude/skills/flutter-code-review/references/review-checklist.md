@@ -1,10 +1,13 @@
 # Review Checklist
 
 - Layer dependencies are clean.
+- CQRS separates Repository commands/entity loads from Query read-model projections.
+- Queries have no writes or infrastructure types; Repositories have no consumer projections.
 - Failure vs Exception boundary is correct.
 - Future/Either and Stream usage is correct.
 - Stream subscriptions are cancelled.
 - DI registrations and lifetimes are correct.
+- ViewModels depend on command/query use cases rather than Repository/Query adapters.
 - UI does not know data/app routing.
 - ViewModels are Flutter-free.
 - Bloc usage follows project convention.
@@ -14,4 +17,5 @@
 - Design tokens and shared widgets are used.
 - l10n is complete for visible text.
 - Tests cover changed behavior at the right layer.
+- Command tests fake Repositories; read tests fake Queries.
 - File/class naming and one-class-per-file rules hold.

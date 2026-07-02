@@ -12,3 +12,9 @@ This skill was distilled from:
 - `.claude/rules/layer-app.md`
 - `.claude/rules/layer-ui.md`
 - `.claude/agents/reviewer.md`
+
+CQRS responsibilities were reconciled with:
+
+- `.claude/skills/flutter-clean-architecture/references/cqrs-pattern.md`
+- `.claude/skills/module-query-cqrs/references/query-cqrs-pattern.md`
+- `.claude/skills/module-repository/references/repository-pattern.md`

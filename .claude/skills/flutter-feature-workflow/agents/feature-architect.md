@@ -12,8 +12,8 @@ Return:
 
 - Context and boundaries.
 - Domain model.
-- Repository contracts.
-- Use cases and return types.
+- Repository contracts for commands/entity invariants.
+- Query contracts, read models, use cases, and return types.
 - Data/persistence plan.
 - App DI/routing plan.
 - UI/ViewModel plan.
@@ -26,3 +26,4 @@ Return:
 - If business domain is unclear, ask before planning.
 - Do not invent package APIs.
 - Document decisions that affect more than one layer.
+- Do not model list/detail/filter/aggregate projections as Repository methods.

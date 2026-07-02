@@ -1,6 +1,6 @@
 ---
 name: flutter-feature-workflow
-description: Use this skill whenever planning or implementing a non-trivial Flutter feature end-to-end with Clean Architecture, DDD, MVVM, TDD, get_it modules, Drift, UI routes, designer/widget-test/reviewer handoffs, or file creation order. Trigger for requests like "implement this feature", "make a plan", "create module", "add screen with data", or "build feature using domain/data/ui/app/core".
+description: Use this skill whenever planning or implementing a non-trivial Flutter feature end-to-end with Clean Architecture, DDD, CQRS, MVVM, TDD, get_it modules, Drift, UI routes, designer/widget-test/reviewer handoffs, or file creation order. Trigger for requests like "implement this feature", "make a plan", "create module", "add screen with data", "commands and queries", or "build feature using domain/data/ui/app/core".
 ---
 
 # Flutter Feature Workflow
@@ -11,6 +11,7 @@ Use this skill to move a feature from idea to implementation without mixing arch
 
 - Read `references/feature-workflow-checklist.md` before planning or implementing a non-trivial feature.
 - Read `references/source-map.md` when you need to trace which `.claude` rules informed this skill.
+- Read `../flutter-clean-architecture/references/cqrs-pattern.md` when the feature reads or writes persisted state.
 - Use `agents/feature-architect.md` for plan-only delegation and `agents/feature-developer.md` for implementation-only delegation.
 
 ## Workflow Overview
@@ -35,11 +36,12 @@ Before coding, identify:
 - DDD context.
 - Entities and value objects.
 - Business rules and validation.
-- Repository contracts.
-- Use cases.
+- Command Repository contracts and the entity reads required by write invariants.
+- Query contracts and read models for lists, details, filters, pagination, joins, or aggregates.
+- Command and query use cases.
 - Return types: `Future<Either<Failure, T>>` vs `Stream<T>`.
 - Local database tables/DAOs if persistence is needed.
-- Data sources and repository implementation.
+- Data sources plus Repository and Query implementations.
 - DI registrations.
 - UI route/view/viewmodel/state/widgets.
 - l10n keys.
@@ -62,6 +64,7 @@ Use this structure for feature planning:
 - Value objects
 - Failures
 - Repository contracts
+- Query contracts and read models
 - Use cases with signatures
 
 ## Data
@@ -69,7 +72,7 @@ Use this structure for feature planning:
 - Data sources
 - Models/DTOs
 - Mappers
-- Repository implementation
+- Repository and Query implementations
 
 ## App
 - DI module registrations
@@ -97,9 +100,9 @@ Use this structure for feature planning:
 Implement one layer at a time:
 
 ```text
-1. domain -> tests -> entities/value objects/use cases/contracts/failures
+1. domain -> tests -> entities/value objects/read models/Repository and Query contracts/use cases/failures
 2. core   -> technical wrappers only if needed
-3. data   -> tests -> data sources/repository impl/mappers/DTOs/Drift
+3. data   -> tests -> data sources/Repository and Query impls/mappers/DTOs/Drift
 4. app    -> DI and routes
 5. ui     -> tests -> ViewModel/State/View/widgets/route
 ```
@@ -128,7 +131,8 @@ Keep domain pure:
 
 - No Flutter imports.
 - No data/core/ui/app imports.
-- Repository interfaces only.
+- Repository and Query interfaces only.
+- Repositories serve commands/entity invariants; Queries serve read projections.
 - Value objects for meaningful primitives.
 - Editable entities have full optional `copyWith`.
 
@@ -138,6 +142,7 @@ Data implements domain:
 
 - Data sources throw Exceptions.
 - Repository impl catches Exceptions and returns Failures.
+- Query impl maps rows/DTOs directly to read models and never mutates state.
 - DTOs/DAOs do not leak.
 - Drift schema in `data/local_database`.
 - Use `customSelect` and `readsFrom` for reactive aggregate queries.
@@ -151,7 +156,7 @@ DI:
 - `injection.dart` only calls modules.
 - Register core/database before contexts.
 - Register use cases and ViewModels as factories.
-- Register data sources/repositories/DAOs/core wrappers as lazy singletons.
+- Register data sources/Repository and Query implementations/DAOs/core wrappers as lazy singletons.
 
 Routing:
 

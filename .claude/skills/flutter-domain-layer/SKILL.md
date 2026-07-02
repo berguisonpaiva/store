@@ -1,6 +1,6 @@
 ---
 name: flutter-domain-layer
-description: Use this skill whenever creating, changing, or reviewing Flutter `lib/domain` code: entities, value objects, use cases, repository contracts, policies, services, Failures, DDD contexts, Stream vs Future Either, copyWith rules, and pure business logic. Trigger this skill for any request mentioning domain, business rules, use cases, entities, value objects, repositories, failures, or DDD in Flutter.
+description: Use this skill whenever creating, changing, or reviewing Flutter `lib/domain` code: entities, value objects, command/query use cases, Repository or Query contracts, read models, policies, services, Failures, CQRS, DDD contexts, Stream vs Future Either, copyWith rules, and pure business logic. Trigger for domain, business rules, use cases, entities, value objects, repositories, queries, projections, failures, CQRS, or DDD in Flutter.
 ---
 
 # Flutter Domain Layer
@@ -11,6 +11,7 @@ Use this skill to model the business core of a Flutter app without leaking frame
 
 - Read `references/domain-checklist.md` before implementing or reviewing domain code.
 - Read `references/source-map.md` when you need to trace which `.claude` rules informed this skill.
+- Read `../flutter-clean-architecture/references/cqrs-pattern.md` before designing data-access contracts.
 - Use `agents/domain-specialist.md` when delegating domain modeling or use-case review.
 
 ## Responsibility
@@ -21,7 +22,8 @@ Use this skill to model the business core of a Flutter app without leaking frame
 - Entities.
 - Value Objects.
 - Use Cases.
-- Repository contracts.
+- Repository and Query contracts.
+- Read Models.
 - Domain Services and Policies.
 - Failures.
 
@@ -37,6 +39,8 @@ domain/
     entities/
     value_objects/
     repositories/
+    queries/
+    read_models/
     services/
     use_cases/
     errors/
@@ -91,7 +95,7 @@ Create a use case when:
 - The behavior needs isolated tests.
 - The action has a clear business name.
 
-Do not create a use case that only forwards one repository call with no rule, orchestration, or reuse. In that case, keep the repository call direct in the ViewModel or introduce a use case only if the project consistently requires that boundary.
+Do not create a command use case that only forwards one Repository call with no rule, orchestration, or reuse. Query use cases may remain thin when they stabilize the application boundary, map failures, combine projections, or keep ViewModels independent from data-access contracts. ViewModels should not choose between Repository and Query directly.
 
 Naming:
 
@@ -117,19 +121,32 @@ Implementations live in data:
 data/[context]/[context]_repository_impl.dart
 ```
 
-The contract exposes entities, value objects, params, and Failures. It never exposes DTOs, DAOs, table rows, QueryRow, HTTP responses, or SDK classes.
+The contract exposes entities, value objects, command params, and Failures. Use it for create/update/delete and for loading an entity when a command needs current state to preserve invariants. It never exposes read projections, DTOs, DAOs, table rows, QueryRow, HTTP responses, or SDK classes.
+
+## Query Contracts and Read Models
+
+Place read contracts and projections in domain:
+
+```text
+domain/[context]/queries/find_[context]_details_query.dart
+domain/[context]/read_models/[context]_details_read_model.dart
+```
+
+Use Query for lists, details, filters, pagination, joins, dashboards, and aggregates. A Query returns a framework-free read model shaped for its consumer and never mutates state. A read model has no business behavior and is distinct from data-layer transport/persistence DTOs.
+
+Data implements Query contracts and may map Drift/API output directly to read models without reconstructing entities.
 
 ## Future Either vs Stream
 
-Use `Future<Either<Failure, T>>` for one-shot operations:
+Use `Future<Either<Failure, T>>` for one-shot operations and queries:
 
 - Create.
 - Update.
 - Delete.
-- Fetch once.
+- Fetch a read model once.
 - Submit command.
 
-Use `Stream<T>` for reactive data:
+Use `Stream<T>` for reactive Queries:
 
 - Lists that update from local database.
 - Detail screens that refresh when related rows change.
@@ -141,7 +158,7 @@ Example:
 
 ```dart
 Future<Either<Failure, Item>> create(CreateItemParams params);
-Stream<List<Item>> watchItems();
+Stream<List<ItemListReadModel>> watchItems(ItemFilters filters);
 ```
 
 When a ViewModel subscribes to a stream, cancel the subscription in `close()`:
@@ -197,7 +214,7 @@ Context dependencies are allowed only when they represent real business dependen
 
 Domain tests use plain Dart:
 
-- Fake repositories by implementing domain contracts.
+- Fake repositories for command use cases and fake queries for read use cases.
 - Test entity/value object validation.
 - Test use case success and failure branches.
 - Test stream cancellation behavior in ViewModels, not in domain unless domain owns stream composition.
@@ -207,8 +224,10 @@ Domain tests use plain Dart:
 - No Flutter imports.
 - No `data`, `core`, `ui`, or `app` imports.
 - Repository files are contracts only.
+- Repository methods are command/entity oriented; projection reads use Query contracts.
+- Query contracts return framework-free read models and never mutate state.
 - Failures represent meaningful domain/app errors.
 - One-shot operations return `Future<Either<Failure, T>>`.
 - Reactive operations return `Stream<T>`.
 - Editable entities have full optional `copyWith`.
-- Use cases have business intent and are not empty pass-throughs.
+- Command use cases have business intent; thin query use cases are justified by the application boundary.

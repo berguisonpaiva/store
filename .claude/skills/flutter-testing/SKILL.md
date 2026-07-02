@@ -1,6 +1,6 @@
 ---
 name: flutter-testing
-description: Use this skill whenever adding, changing, or reviewing Flutter tests: domain unit tests, data repository/data-source tests, ViewModel/Cubit tests, widget tests, flutter_test, bloc_test MockCubit, mocktail, pumpApp helpers, localization in tests, and non-flaky UI coverage. Trigger for any request mentioning tests, test strategy, widget test, Cubit test, ViewModel test, fake repositories, mocktail, bloc_test, or coverage in Flutter.
+description: Use this skill whenever adding, changing, or reviewing Flutter tests: domain unit tests, command/query use cases, Repository/Query adapters, data sources, ViewModel/Cubit tests, widget tests, flutter_test, bloc_test, mocktail, pumpApp helpers, localization, and non-flaky UI coverage. Trigger for tests, test strategy, CQRS tests, widget/Cubit/ViewModel tests, fake repositories, fake queries, mocktail, bloc_test, or Flutter coverage.
 ---
 
 # Flutter Testing
@@ -11,6 +11,7 @@ Use this skill to test the right behavior at the right layer without coupling te
 
 - Read `references/testing-checklist.md` before writing or reviewing tests.
 - Read `references/source-map.md` when you need to trace which `.claude` rules informed this skill.
+- Read `../flutter-clean-architecture/references/cqrs-pattern.md` before testing persisted commands or reads.
 - Use `agents/testing-specialist.md` when delegating widget-test mapping or test-quality review.
 
 ## Test Structure
@@ -33,7 +34,8 @@ test/
 Domain:
 
 - Entity and value object validation.
-- Use cases with fake repositories.
+- Command use cases with fake repositories.
+- Query use cases with fake queries and framework-free read models.
 - Domain services and policies.
 - Failure branches.
 - No Flutter test harness needed.
@@ -41,6 +43,7 @@ Domain:
 Data:
 
 - Repository implementations with fake data sources.
+- Query implementations with fake data sources/DAOs.
 - Exception to Failure conversion.
 - Data source behavior with fake DAOs/clients.
 - Drift queries when behavior is non-trivial.
@@ -151,6 +154,23 @@ Check:
 - Stream update handling.
 - `close()` cancels subscriptions.
 
+## CQRS Test Split
+
+Command side:
+
+- Fake Repository contracts.
+- Assert entity validation, invariant-preserving loads, state changes, and Failure branches.
+- Test Repository adapters for persistence mapping and Exception-to-Failure conversion.
+
+Query side:
+
+- Use fake queries for query use cases.
+- Assert read-model shape, empty/not-found, filters, pagination, joins/aggregates, failures, reactive emissions, and Exception-to-Failure conversion on the stream error channel.
+- Test Query adapters without requiring entity reconstruction.
+- Assert a Query never calls write methods or produces write side effects.
+
+ViewModel tests fake command/query use cases, not Repository or Query adapters.
+
 ## Widget Tests with Cubits
 
 Use `bloc_test` `MockCubit` and `mocktail`.
@@ -238,6 +258,7 @@ Minimum list scenarios:
 ## Review Checklist
 
 - Tests use fakes/mocks at the correct layer.
+- Command tests use fake repositories; read tests use fake queries.
 - Widget tests do not use `getIt`.
 - Views are testable by constructor injection.
 - Localization/theme wrappers are present.

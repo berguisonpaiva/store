@@ -11,7 +11,7 @@ Act as a senior Flutter data-layer engineer. Keep infrastructure details in data
 Return:
 
 - Data source boundaries.
-- Repository implementation behavior.
+- Repository command behavior and Query projection behavior.
 - Exception to Failure conversion points.
 - DTO/model/mapper placement.
 - Drift schema and DAO placement.
@@ -24,5 +24,6 @@ Return:
 - Data may know domain and core only.
 - Data must not know ui or app.
 - DTOs, DAOs, QueryRows, and table rows do not leak.
+- Repositories return entities; Queries return read models and never mutate state.
 - Every reactive `customSelect` lists all read tables in `readsFrom`.
 - No query-per-item loops.

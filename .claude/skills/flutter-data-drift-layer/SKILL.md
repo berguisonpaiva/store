@@ -1,6 +1,6 @@
 ---
 name: flutter-data-drift-layer
-description: Use this skill whenever creating, changing, or reviewing Flutter `lib/data` code: repository implementations, data sources, DTOs/models, mappers, Exceptions, Drift tables, DAOs, customSelect, readsFrom, local database, remote data, and N+1 query avoidance. Trigger for any Flutter persistence, Drift, repository impl, mapper, DTO, DAO, SQL, or data-source work.
+description: Use this skill whenever creating, changing, or reviewing Flutter `lib/data` code: Repository or Query implementations, CQRS read projections, data sources, DTOs/models, mappers, Exceptions, Drift tables, DAOs, customSelect, readsFrom, local database, remote data, and N+1 query avoidance. Trigger for Flutter persistence, Drift, repository/query adapter, read model, mapper, DTO, DAO, SQL, or data-source work.
 ---
 
 # Flutter Data and Drift Layer
@@ -11,13 +11,14 @@ Use this skill to implement domain contracts with infrastructure details while k
 
 - Read `references/data-drift-checklist.md` before implementing or reviewing data/Drift code.
 - Read `references/source-map.md` when you need to trace which `.claude` rules informed this skill.
+- Read `../flutter-clean-architecture/references/cqrs-pattern.md` before implementing persisted reads or writes.
 - Use `agents/data-drift-specialist.md` when delegating persistence, repository, DAO, or SQL review.
 
 ## Responsibility
 
 `data/` owns:
 
-- Repository implementations.
+- Repository and Query implementations.
 - Local and remote data sources.
 - DTOs and models.
 - Mappers.
@@ -41,7 +42,11 @@ data/
       [context]_remote_data_source_impl.dart
     models/
     mappers/
-    [context]_repository_impl.dart
+    repositories/
+      [context]_repository_impl.dart
+    queries/
+      find_[context]_details_query_impl.dart
+      watch_[context]_list_query_impl.dart
 ```
 
 ## Dependency Rules
@@ -52,7 +57,7 @@ data/
 - May know `core`.
 - Must not know `ui`.
 - Must not know `app`.
-- Implements domain repository contracts.
+- Implements domain Repository and Query contracts.
 
 Repository relation:
 
@@ -61,7 +66,7 @@ domain/[context]/repositories/[context]_repository.dart  contract
 data/[context]/[context]_repository_impl.dart            implementation
 ```
 
-The repository implementation is the boundary where technical Exceptions become domain Failures.
+Repository and one-shot Query implementations are boundaries where technical Exceptions become domain Failures. Reactive Query implementations translate technical Exceptions into domain Failures on the stream error channel unless the domain contract explicitly requires another convention.
 
 ## Data Sources
 
@@ -78,11 +83,12 @@ Rules:
 - Data sources throw Exceptions or propagate technical errors.
 - Data sources return models/DTOs or database-friendly rows, not domain Failures.
 - Repository implementations convert model/DTO outputs to domain entities.
+- Query implementations convert model/DTO/row outputs directly to domain read models.
 - Repository implementations catch Exceptions and return `Either<Failure, T>` when the domain contract requires it.
 
 ## Models, DTOs, and Mappers
 
-Models/DTOs live only in data.
+Transport and persistence Models/DTOs live only in data. Domain read models are separate projection contracts and are not data DTOs.
 
 Use mapper names and methods consistently:
 
@@ -93,6 +99,19 @@ Use mapper names and methods consistently:
 - `fromDto()`
 
 Do not expose DTOs, DAOs, table rows, `QueryRow`, or SDK response objects outside data and app/di wiring.
+
+## Query Adapters
+
+Implement a domain `*Query` contract for consumer-oriented reads such as details, lists, filters, pagination, joins, dashboards, and aggregates.
+
+Rules:
+
+- Map data-source output directly to the domain read model.
+- Do not reconstruct an entity when no command invariant or domain behavior is needed.
+- Do not mutate state or hide writes inside a Query.
+- Keep Query and Repository contracts separate even if one DAO or adapter class supports both internally.
+- Use `Future<Either<Failure, ReadModel>>` for one-shot Queries and `Stream<ReadModel>` for reactive Queries.
+- Convert technical Exceptions into Failures on a reactive Query's error channel before exposing the stream.
 
 ## Drift Placement
 
@@ -114,7 +133,7 @@ Generic database connection factories may live in `core/database/`, but anything
 
 ## Reactive Drift Queries
 
-When a screen needs an entity plus aggregates or related table data, prefer one reactive Drift query over combining streams in UI/domain.
+When a screen needs a read model with aggregates or related table data, prefer one reactive Drift Query over combining streams in UI/domain.
 
 Use `customSelect` with `readsFrom`:
 
@@ -148,8 +167,8 @@ Rules:
 - SQL table names are Drift `tableName` values, not Dart class names.
 - Every table mentioned in SQL must be listed in `readsFrom`.
 - Forgetting a table in `readsFrom` means the stream will not re-emit when that table changes.
-- DAO output can be Drift-friendly, but the repository converts it to domain entities.
-- Domain defines aggregate entities; data only fills them.
+- DAO output can be Drift-friendly, but a Query adapter converts it to a domain read model.
+- Domain defines read models for consumer projections; data only fills them.
 
 ## Avoid N+1 Queries
 
@@ -197,6 +216,7 @@ Apply TDD where risk exists:
 
 - Data sources with fake DAOs/clients.
 - Repository implementations with fake data sources.
+- Query implementations with fake data sources/DAOs.
 - Error conversion from Exception to Failure.
 - Mapper behavior when it contains non-trivial logic.
 
@@ -207,6 +227,7 @@ Do not over-test DTOs or trivial mappers that only copy fields, unless they cont
 - Data does not import UI or app.
 - Domain contracts remain in domain.
 - Repository impl converts Exceptions to Failures.
+- Repository impl persists entities; Query impl returns read models and never mutates state.
 - DTOs and Drift classes do not leak outside data.
 - Drift app schema is in `data/local_database`, not core.
 - Reactive `customSelect` declares all `readsFrom` tables.

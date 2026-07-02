@@ -17,6 +17,7 @@ Act as a senior Flutter architect for Clean Architecture + DDD + MVVM. Produce p
 Return:
 
 - DDD contexts involved.
+- CQRS classification, Repository/Query contracts, and required read models.
 - Layer responsibilities.
 - Dependency direction risks.
 - Failure vs Exception boundary.
@@ -29,5 +30,6 @@ Return:
 - Domain stays framework-free.
 - App wires but does not own business rules.
 - Data implements domain contracts.
+- Repositories serve commands/entity invariants; Queries serve read projections and never mutate state.
 - UI gets navigation callbacks instead of app routes.
 - One public architectural class per file unless justified.

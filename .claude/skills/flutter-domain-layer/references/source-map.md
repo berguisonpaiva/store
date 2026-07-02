@@ -9,3 +9,10 @@ This skill was distilled from:
 - `.claude/agents/architect.md`
 - `.claude/agents/developer.md`
 - `.claude/agents/reviewer.md`
+
+CQRS responsibilities were reconciled with:
+
+- `.claude/skills/flutter-clean-architecture/references/cqrs-pattern.md`
+- `.claude/skills/module-query-cqrs/references/query-cqrs-pattern.md`
+- `.claude/skills/module-repository/references/repository-pattern.md`
+- `.claude/skills/module-use-case/references/use-case-pattern.md`

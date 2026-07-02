@@ -12,6 +12,7 @@ Return:
 
 - Route/View/ViewModel responsibility split.
 - State ownership.
+- Command/query use-case boundary and read-model usage.
 - Navigation callback check.
 - Bloc usage check.
 - Form create/edit unification.
@@ -23,6 +24,7 @@ Return:
 
 - UI does not import data or app routing.
 - ViewModel does not import Flutter/Material/Widgets.
+- ViewModel depends on use cases, not Repository/Query adapters.
 - Views receive ViewModels and callbacks by constructor.
 - Use explicit `bloc:` when that is project convention.
 - No functions returning widgets.
